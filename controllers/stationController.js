@@ -49,7 +49,7 @@ const calculateDistance = async (req, res, next) => {
       params: {
         origins: [origin],
         destinations: [destination],
-        key: "AIzaSyCHfrNkRQvnwei-hoS3-PCEVBfcL7qjQjg", // Thay thế YOUR_API_KEY bằng API Key của bạn
+        key: process.env.GOOGLE_MAP_API_KEY,
       },
     });
     const distance = response.data.rows[0].elements[0].distance.text;
@@ -73,15 +73,14 @@ const calculateDistanceToAllStations = async (req, res, next) => {
       params: {
         origins: [origin],
         destinations: destinations,
-        // key: "AIzaSyACjFnOc92QLx3cJi7bL43bhxu9YTDA3lM", // Thay thế YOUR_API_KEY bằng API Key của bạn
-        key: "AIzaSyCHfrNkRQvnwei-hoS3-PCEVBfcL7qjQjg", // Thay thế YOUR_API_KEY bằng API Key của bạn
+        key: process.env.GOOGLE_MAP_API_KEY,
       },
     });
 
     // Xử lý kết quả để trả về mảng các khoảng cách và thời gian
     let distancesAndDurations = response.data.rows[0].elements.map(
       (element, index) => ({
-        station: stations[index]._id, // Hoặc bất kỳ định danh nào bạn muốn sử dụng từ đối tượng station
+        station: stations[index]._id,
         distance: element.distance.text,
         duration: element.duration.text,
       })
@@ -122,11 +121,10 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
         },
       },
       {
-        $sort: { "station.createdAt": 1 }, // Sắp xếp các station theo trường code, sử dụng 1 cho thứ tự tăng dần
+        $sort: { "station.createdAt": 1 },
       },
     ]);
 
-    // Chuẩn bị mảng destinations dựa trên thông tin station
     let destinations = stationsWithCyclingCount.map(
       (station) => `${station.station.latitude},${station.station.longitude}`
     );
@@ -135,20 +133,23 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
       params: {
         origins: [origin],
         destinations: destinations,
-        key: "AIzaSyCHfrNkRQvnwei-hoS3-PCEVBfcL7qjQjg", // Thay thế YOUR_API_KEY bằng API Key của bạn
+        key: process.env.GOOGLE_MAP_API_KEY,
       },
     });
 
-    // Xử lý kết quả để trả về mảng các khoảng cách và thời gian
     let distancesAndDurations = response.data.rows[0].elements.map(
       (element, index) => ({
-        station: stations[index], // Hoặc bất kỳ định danh nào bạn muốn sử dụng từ đối tượng station
+        station: stations[index],
         distance: element.distance.text,
         duration: element.duration.text,
         countOfCycling: stationsWithCyclingCount[index].count,
       })
     );
-
+    distancesAndDurations.sort(
+      (a, b) =>
+        parseFloat(a.distance.replace(",", "")) -
+        parseFloat(b.distance.replace(",", ""))
+    );
     res.json(distancesAndDurations);
   } catch (error) {
     console.error(error);
