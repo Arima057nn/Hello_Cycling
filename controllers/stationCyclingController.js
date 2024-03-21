@@ -4,6 +4,14 @@ const createCyclingAtStation = async (req, res, next) => {
   try {
     const { cyclingId, stationId } = req.body;
 
+    const existingCycling = await StationCyclingModel.findOne({
+      cyclingId: cyclingId,
+    });
+
+    if (existingCycling) {
+      return res.status(400).json({ error: "Cycling already exists" });
+    }
+
     const neweCyclingAtStation = await StationCyclingModel.create({
       stationId: stationId,
       cyclingId: cyclingId,
