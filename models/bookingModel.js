@@ -12,18 +12,13 @@ const BookingSchema = new mongoose.Schema(
       ref: "Cyclings",
       require: true,
     },
-    endTime: { type: timestamps },
     startStation: {
       type: mongoose.SchemaTypes.ObjectId,
       ref: "Stations",
       require: true,
     },
-    endStation: {
-      type: mongoose.SchemaTypes.ObjectId,
-      ref: "Stations",
-      require: true,
-    },
-    total: { type: Number },
+
+    status: { type: Number },
   },
   {
     timestamps: true,
@@ -31,6 +26,6 @@ const BookingSchema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.model("Bookings", BookingSchema);
+const BookingModel = mongoose.model("Bookings", BookingSchema);
 
 module.exports = BookingModel;
