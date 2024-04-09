@@ -7,6 +7,7 @@ const bodyParser = require("body-parser");
 const userRouter = require("./routers/userRouter");
 const stationRouter = require("./routers/stationRouter");
 const cyclingRouter = require("./routers/cyclingRouter");
+const bookingRouter = require("./routers/bookingRouter");
 
 db.connectDB();
 
@@ -26,6 +27,7 @@ app.get("/", (req, res) => {
 app.use("/api/user", userRouter);
 app.use("/api/station", stationRouter);
 app.use("/api/cycling", cyclingRouter);
+app.use("/api/booking", bookingRouter);
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

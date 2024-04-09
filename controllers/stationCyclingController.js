@@ -74,8 +74,23 @@ const getCyclingsAtStation = async (req, res, next) => {
   }
 };
 
+const findCyclingAtStation = async (req, res, next) => {
+  try {
+    const { cyclingId } = req.query;
+    const cycling = await StationCyclingModel.findOne({
+      cyclingId: cyclingId,
+    })
+      .populate("stationId")
+      .populate("cyclingId");
+    res.json(cycling);
+  } catch (error) {
+    console.error("Error getting cycling at station:", error);
+    res.status(500).json({ error: "Failed to get cycling at station" });
+  }
+};
 module.exports = {
   createCyclingAtStation,
   GetCountOfAllCyclingAtStation,
   getCyclingsAtStation,
+  findCyclingAtStation,
 };

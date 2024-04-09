@@ -10,6 +10,7 @@ const {
   createCyclingAtStation,
   GetCountOfAllCyclingAtStation,
   getCyclingsAtStation,
+  findCyclingAtStation,
 } = require("../controllers/stationCyclingController");
 
 const router = express.Router();
@@ -22,5 +23,6 @@ router.get("/info", getCyclingsAtStation);
 router.post("/calculate", calculateDistance);
 router.post("/calculateAll", calculateDistanceToAllStations);
 router.post("/cycling", getDistanceAndCountOfCyclingAtStations);
+router.get("/find", findCyclingAtStation);
 
 module.exports = router;

@@ -11,6 +11,7 @@ const UserSchema = new mongoose.Schema(
     // phone: { type: String, unique: true, required: true },
     // status: { type: Number },
     // point: { type: Number },
+    // member: { type: Number },
   },
   {
     timestamps: true,
