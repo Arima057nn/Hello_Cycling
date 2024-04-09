@@ -1,3 +1,4 @@
+const { CYCLING_STATUS } = require("../constants/cycling");
 const CyclingModel = require("../models/cyclingModel");
 
 const createCycling = async (req, res, next) => {
@@ -30,7 +31,10 @@ const createCycling = async (req, res, next) => {
 const findCycling = async (req, res, next) => {
   try {
     const { code } = req.query;
-    const cycling = await CyclingModel.findOne({ code, status: 0 });
+    const cycling = await CyclingModel.findOne({
+      code,
+      status: CYCLING_STATUS.READY,
+    });
     if (!cycling) {
       return res.status(404).json({ error: "Cycling not found" });
     }
