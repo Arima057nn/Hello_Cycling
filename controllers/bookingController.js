@@ -86,4 +86,41 @@ const deleteAllBookingDetail = async (req, res) => {
   }
 };
 
-module.exports = { createBooking, createTripDetail, deleteAllBooking };
+const getTripDetail = async (req, res) => {
+  try {
+    const bookingId = req.query.bookingId;
+    console.log("booking:", bookingId);
+    const tripDetail = await BookingDetailModel.findOne({ bookingId });
+    if (!tripDetail) {
+      return res.status(404).json({ error: "Trip detail not found" });
+    }
+    res.json(tripDetail);
+  } catch (error) {
+    console.error("Error get trip detail:", error);
+    res.status(500).json({ error: "Failed to get trip detail" });
+  }
+};
+
+const findTrip = async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    const trip = await BookingModel.findOne({
+      status: BOOKING_STATUS.ACTIVE,
+      userId: userId,
+    });
+    if (!trip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+    res.json(trip);
+  } catch (error) {
+    console.error("Error find trip:", error);
+    res.status(500).json({ error: "Failed to find trip" });
+  }
+};
+module.exports = {
+  createBooking,
+  createTripDetail,
+  deleteAllBooking,
+  getTripDetail,
+  findTrip,
+};

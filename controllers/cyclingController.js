@@ -45,4 +45,17 @@ const findCycling = async (req, res, next) => {
   }
 };
 
-module.exports = { createCycling, findCycling };
+const getCycling = async (req, res, next) => {
+  try {
+    const { code } = req.query;
+    const cycling = await CyclingModel.findOne({ code });
+    if (!cycling) {
+      return res.status(404).json({ error: "Cycling not found" });
+    }
+    res.json(cycling);
+  } catch (error) {
+    console.error("Error finding cycling:", error);
+    res.status(500).json({ error: "Failed to find cycling" });
+  }
+};
+module.exports = { createCycling, findCycling, getCycling };
