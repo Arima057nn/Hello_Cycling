@@ -58,4 +58,28 @@ const getCycling = async (req, res, next) => {
     res.status(500).json({ error: "Failed to find cycling" });
   }
 };
-module.exports = { createCycling, findCycling, getCycling };
+
+const sendCoordinate = async (req, res, next) => {
+  try {
+    const { code, coordinate } = req.body;
+    const cycling = await CyclingModel.findOne({ code });
+    console.log("cycling", cycling);
+    console.log(code, coordinate);
+    if (!cycling) {
+      return res.status(404).json({ error: "Cycling not found" });
+    }
+    cycling.latitude = coordinate.latitude;
+    cycling.longitude = coordinate.longitude;
+    if (cycling.status === CYCLING_STATUS.ACTIVE) {
+      cycling.coordinate.push(coordinate);
+      console.log("Coordinate:", coordinate);
+    }
+    await cycling.save();
+    res.json(cycling);
+  } catch (error) {
+    console.error("Error sending coordinate:", error);
+    res.status(500).json({ error: "Failed to send coordinate" });
+  }
+};
+
+module.exports = { createCycling, findCycling, getCycling, sendCoordinate };

@@ -35,7 +35,7 @@ const createBooking = async (req, res) => {
 };
 
 const createTripDetail = async (req, res) => {
-  const { bookingId, status, endStation, tripHistory } = req.body;
+  const { bookingId, status, endStation } = req.body;
   try {
     const booking = await BookingModel.findById(bookingId);
     const date = new Date();
@@ -43,13 +43,14 @@ const createTripDetail = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ error: "Booking not found" });
     }
+    const cycling = await CyclingModel.findById(booking.cyclingId);
     booking.status = status;
     await booking.save();
     const newBookingDetail = await BookingDetailModel.create({
       bookingId,
       endStation,
       total,
-      tripHistory,
+      tripHistory: cycling.coordinate,
     });
     await StationCyclingModel.create({
       stationId: endStation,
@@ -57,6 +58,7 @@ const createTripDetail = async (req, res) => {
     });
     await CyclingModel.findByIdAndUpdate(booking.cyclingId, {
       status: CYCLING_STATUS.READY,
+      coordinate: [],
     });
     res.json(newBookingDetail);
   } catch (error) {
