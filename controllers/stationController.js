@@ -6,7 +6,6 @@ const client = new Client({});
 const createStation = async (req, res, next) => {
   try {
     const station = req.body;
-    console.log(station);
     const existingStation = await StationModel.findOne({
       code: station.code,
     });
@@ -34,7 +33,6 @@ const createStation = async (req, res, next) => {
 const getAllStation = async (req, res, next) => {
   try {
     const stations = await StationModel.find();
-    console.log("okee");
     res.json(stations);
   } catch (error) {
     console.error("Error getting stations:", error);
