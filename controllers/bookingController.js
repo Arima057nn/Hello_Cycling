@@ -5,6 +5,83 @@ const BookingModel = require("../models/bookingModel");
 const CyclingModel = require("../models/cyclingModel");
 const StationCyclingModel = require("../models/stationCyclingModel");
 
+const createKeepCycling = async (req, res) => {
+  try {
+    const { cyclingId, startStation } = req.body;
+    const user = req.user;
+    const existingBooking = await BookingModel.findOne({
+      userId: user.userId,
+      status: BOOKING_STATUS.ACTIVE,
+    });
+    if (!existingBooking) {
+      const existingKeepingBooking = await BookingModel.findOne({
+        userId: user.userId,
+        status: BOOKING_STATUS.KEEPING,
+      });
+      if (existingKeepingBooking) {
+        return res
+          .status(404)
+          .json({ error: "User already on the keep trips" });
+      }
+    } else return res.status(404).json({ error: "User already on the trips" });
+
+    const cycling = await CyclingModel.findById(cyclingId);
+    if (cycling && cycling.status === CYCLING_STATUS.READY) {
+      cycling.status = CYCLING_STATUS.KEEPING;
+      await cycling.save();
+    }
+    const newKeepBooking = await BookingModel.create({
+      userId: user.userId,
+      cyclingId: cyclingId,
+      startStation: startStation,
+      status: BOOKING_STATUS.KEEPING,
+    });
+
+    res.json(newKeepBooking);
+  } catch (error) {
+    console.error("Error keep cycling:", error);
+    res.status(500).json({ error: "Failed to keep cycling" });
+  }
+};
+
+const startFromKeepCycling = async (req, res) => {
+  try {
+    const user = req.user;
+    const keepBooking = BookingModel.findOne({
+      userId: user.userId,
+      status: BOOKING_STATUS.KEEPING,
+    });
+    if (!keepBooking) {
+      return res.status(404).json({ error: "User not on the keep trips" });
+    }
+    await StationCyclingModel.deleteOne({ cyclingId: keepBooking.cyclingId });
+    keepBooking.status = BOOKING_STATUS.ACTIVE;
+    await keepBooking.save();
+    res.json(keepBooking);
+  } catch (error) {
+    console.error("Error start from keep cycling:", error);
+    res.status(500).json({ error: "Failed to start from keep cycling" });
+  }
+};
+
+const cancalKeepCycling = async (req, res) => {
+  try {
+    const user = req.user;
+    const keepBooking = BookingModel.findOne({
+      userId: user.userId,
+      status: BOOKING_STATUS.KEEPING,
+    });
+    if (!keepBooking) {
+      return res.status(404).json({ error: "User not on the keep trips" });
+    }
+    keepBooking.status = BOOKING_STATUS.CANCEL;
+    await keepBooking.save();
+    res.json(keepBooking);
+  } catch (error) {
+    console.error("Error cancel keep cycling:", error);
+    res.status(500).json({ error: "Failed to cancel keep cycling" });
+  }
+};
 const createBooking = async (req, res) => {
   try {
     const booking = req.body;
@@ -125,4 +202,7 @@ module.exports = {
   deleteAllBooking,
   getTripDetail,
   findTrip,
+  createKeepCycling,
+  startFromKeepCycling,
+  cancalKeepCycling,
 };
