@@ -96,6 +96,7 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
   const stations = await StationModel.find();
 
   try {
+    // Lấy thông tin số lượng xe của mỗi trạm
     const stationsWithCyclingCount = await StationCyclingModel.aggregate([
       {
         $group: {
@@ -123,10 +124,19 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
       },
     ]);
 
-    let destinations = stationsWithCyclingCount.map(
-      (station) => `${station.station.latitude},${station.station.longitude}`
-    );
+    // Tạo một Map để lưu thông tin số lượng xe của mỗi trạm
+    const cyclingCountMap = new Map();
+    stationsWithCyclingCount.forEach((station) => {
+      cyclingCountMap.set(station.station._id.toString(), station.count);
+    });
 
+    // Tạo mảng destinations với tất cả các trạm (cả những trạm không có xe)
+    let destinations = stations.map((station) => {
+      const count = cyclingCountMap.get(station._id.toString()) || 0;
+      return `${station.latitude},${station.longitude}`;
+    });
+
+    // Gọi API Google Distance Matrix
     const response = await client.distancematrix({
       params: {
         origins: [origin],
@@ -134,20 +144,24 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
         key: process.env.GOOGLE_MAP_API_KEY,
       },
     });
-
+    console.log(response.data.rows[0].elements);
+    // Xử lý kết quả trả về từ API Google Distance Matrix
     let distancesAndDurations = response.data.rows[0].elements.map(
       (element, index) => ({
         station: stations[index],
         distance: element.distance.text,
+        value: element.distance.value,
         duration: element.duration.text,
-        countOfCycling: stationsWithCyclingCount[index].count,
+        countOfCycling:
+          cyclingCountMap.get(stations[index]._id.toString()) || 0,
       })
     );
+
+    // Sắp xếp theo khoảng cách
     distancesAndDurations.sort(
-      (a, b) =>
-        parseFloat(a.distance.replace(",", "")) -
-        parseFloat(b.distance.replace(",", ""))
+      (a, b) => parseFloat(a.value) - parseFloat(b.value)
     );
+
     res.json(distancesAndDurations);
   } catch (error) {
     console.error(error);
