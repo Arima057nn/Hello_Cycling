@@ -1,4 +1,5 @@
 const StationCyclingModel = require("../models/stationCyclingModel");
+const StationModel = require("../models/stationModel");
 
 const createCyclingAtStation = async (req, res, next) => {
   try {
@@ -26,32 +27,29 @@ const createCyclingAtStation = async (req, res, next) => {
 
 const GetCountOfAllCyclingAtStation = async (req, res, next) => {
   try {
-    const stations = await StationCyclingModel.aggregate([
+    const stationList = await StationModel.find();
+
+    const stationCyclingList = await StationCyclingModel.aggregate([
       {
         $group: {
           _id: "$stationId",
           count: { $sum: 1 }, // Đếm số lượng Cycling trong mỗi Station
         },
       },
-      {
-        $lookup: {
-          from: "Stations",
-          localField: "_id",
-          foreignField: "_id",
-          as: "station",
-        },
-      },
-      {
-        $project: {
-          _id: 0, // Loại bỏ trường _id
-          station: { $arrayElemAt: ["$station", 0] }, // Lấy thông tin của Station từ trường station
-          count: 1, // Giữ trường count
-        },
-      },
-      {
-        $sort: { "station.createdAt": 1 }, // Sắp xếp các station theo trường code, sử dụng 1 cho thứ tự tăng dần
-      },
     ]);
+
+    const stationCyclingMap = new Map();
+    stationCyclingList.forEach((item) => {
+      stationCyclingMap.set(item._id.toString(), item.count);
+    });
+
+    const stations = stationList.map((station) => {
+      const count = stationCyclingMap.get(station._id.toString()) || 0;
+      return {
+        station,
+        count,
+      };
+    });
 
     res.json(stations);
   } catch (error) {
