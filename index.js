@@ -3,11 +3,17 @@ const app = express();
 const port = 3030;
 const cors = require("cors");
 const db = require("./configs/db");
+const admin = require("firebase-admin");
 const bodyParser = require("body-parser");
 const userRouter = require("./routers/userRouter");
 const stationRouter = require("./routers/stationRouter");
 const cyclingRouter = require("./routers/cyclingRouter");
 const bookingRouter = require("./routers/bookingRouter");
+const serviceAccount = require("./serviceAccountKey.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 db.connectDB();
 
