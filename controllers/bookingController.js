@@ -4,6 +4,7 @@ const BookingDetailModel = require("../models/bookingDetailModel");
 const BookingModel = require("../models/bookingModel");
 const CyclingModel = require("../models/cyclingModel");
 const StationCyclingModel = require("../models/stationCyclingModel");
+const UserModel = require("../models/userModel");
 
 const createKeepCycling = async (req, res) => {
   try {
@@ -84,10 +85,15 @@ const cancalKeepCycling = async (req, res) => {
 };
 const createBooking = async (req, res) => {
   try {
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
     const booking = req.body;
 
     const existingUser = await BookingModel.findOne({
-      userId: booking.userId,
+      userId: user._id,
       status: BOOKING_STATUS.ACTIVE,
     });
     if (existingUser) {
@@ -98,10 +104,10 @@ const createBooking = async (req, res) => {
     });
     await StationCyclingModel.deleteOne({ cyclingId: booking.cyclingId });
     const newBooking = await BookingModel.create({
-      userId: booking.userId,
+      userId: user._id,
       cyclingId: booking.cyclingId,
       startStation: booking.startStation,
-      status: booking.status,
+      status: BOOKING_STATUS.ACTIVE,
     });
 
     res.json(newBooking);
@@ -182,10 +188,14 @@ const getTripDetail = async (req, res) => {
 
 const findTrip = async (req, res) => {
   try {
-    const userId = req.query.userId;
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
     const trip = await BookingModel.findOne({
       status: BOOKING_STATUS.ACTIVE,
-      userId: userId,
+      userId: user._id,
     });
     if (!trip) {
       return res.status(404).json({ error: "Trip not found" });

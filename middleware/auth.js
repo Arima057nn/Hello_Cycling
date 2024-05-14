@@ -13,6 +13,10 @@ const authenTokenUser = async (req, res, next) => {
     .then((decodedToken) => {
       req.user = decodedToken;
       next();
+    })
+    .catch((error) => {
+      console.error("Error verifying token:", error.code);
+      return res.status(403).send(`Error verifying token: ${error.code}`);
     });
 };
 
@@ -30,6 +34,10 @@ const authenTokenAdmin = (req, res, next) => {
       req.user = decodedToken;
       if (decodedToken.role && decodedToken.role === USER_ROLE.ADMIN) next();
       return res.status(403).send("Access denied. No role provided.");
+    })
+    .catch((error) => {
+      console.error("Error verifying token:", error.code);
+      return res.status(403).send(`Error verifying token: ${error.code}`);
     });
 };
 
