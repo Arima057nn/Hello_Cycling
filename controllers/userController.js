@@ -41,8 +41,23 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const getInfoUser = async (req, res, next) => {
+  try {
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error getting user info:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   register,
-
+  getInfoUser,
   updateProfile,
 };

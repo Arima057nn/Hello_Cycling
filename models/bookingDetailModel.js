@@ -7,6 +7,7 @@ const BookingDetailSchema = new mongoose.Schema(
       ref: "Bookings",
       require: true,
     },
+    uid: { type: String, require: true },
     endStation: {
       type: mongoose.SchemaTypes.ObjectId,
       ref: "Stations",

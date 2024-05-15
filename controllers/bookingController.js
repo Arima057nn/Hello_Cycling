@@ -118,6 +118,7 @@ const createBooking = async (req, res) => {
 };
 
 const createTripDetail = async (req, res) => {
+  const { user_id } = req.user;
   const { bookingId, status, endStation } = req.body;
   try {
     const booking = await BookingModel.findById(bookingId);
@@ -130,6 +131,7 @@ const createTripDetail = async (req, res) => {
     booking.status = status;
     await booking.save();
     const newBookingDetail = await BookingDetailModel.create({
+      uid: user_id,
       bookingId,
       endStation,
       total,
