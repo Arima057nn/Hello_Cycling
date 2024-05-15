@@ -9,7 +9,11 @@ const CyclingSchema = new mongoose.Schema(
     coordinate: { type: Array },
     password: { type: String },
     status: { type: Number },
-    category: { type: Number },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CyclingTypes",
+      require: true,
+    },
   },
   {
     timestamps: true,

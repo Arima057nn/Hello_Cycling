@@ -64,7 +64,7 @@ const getCyclingsAtStation = async (req, res, next) => {
     console.log(stationId);
     const cyclings = await StationCyclingModel.find({
       stationId: stationId,
-    }).populate("cyclingId");
+    }).populate({ path: "cyclingId", populate: { path: "category" } });
     res.json(cyclings);
   } catch (error) {
     console.error("Error getting cycling at station:", error);

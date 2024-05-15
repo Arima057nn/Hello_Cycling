@@ -82,4 +82,25 @@ const sendCoordinate = async (req, res, next) => {
   }
 };
 
-module.exports = { createCycling, findCycling, getCycling, sendCoordinate };
+const updateAllCycling = async (req, res, next) => {
+  try {
+    const { category } = req.body;
+    const cyclings = await CyclingModel.find();
+    cyclings.forEach(async (cycling) => {
+      cycling.category = category;
+      await cycling.save();
+    });
+    res.json(cyclings);
+  } catch (error) {
+    console.error("Error updating all cycling:", error);
+    res.status(500).json({ error: "Failed to update all cycling" });
+  }
+};
+
+module.exports = {
+  createCycling,
+  findCycling,
+  getCycling,
+  sendCoordinate,
+  updateAllCycling,
+};
