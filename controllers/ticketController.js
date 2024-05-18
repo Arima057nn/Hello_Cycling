@@ -2,13 +2,17 @@ const TicketModel = require("../models/ticketModel");
 
 const createTicket = async (req, res) => {
   try {
-    const { name, description, price, overduePrice, timer, duration } =
-      req.body;
-
-    const existingTicket = await TicketModel.findOne({ name });
-    if (existingTicket) {
-      return res.status(400).json({ error: "Ticket already exists" });
-    }
+    const {
+      name,
+      description,
+      price,
+      overduePrice,
+      timer,
+      duration,
+      condition,
+      expiration,
+      categoryId,
+    } = req.body;
 
     const newTicket = await TicketModel.create({
       name,
@@ -17,6 +21,9 @@ const createTicket = async (req, res) => {
       overduePrice,
       timer,
       duration,
+      condition,
+      expiration,
+      categoryId,
     });
 
     res.json(newTicket);
@@ -28,7 +35,7 @@ const createTicket = async (req, res) => {
 
 const getAllTicket = async (req, res) => {
   try {
-    const tickets = await TicketModel.find();
+    const tickets = await TicketModel.find().populate("categoryId");
     res.json(tickets);
   } catch (error) {
     console.error("Error getting tickets:", error);

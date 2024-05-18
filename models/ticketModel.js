@@ -8,6 +8,13 @@ const TicketSchema = new mongoose.Schema(
     overduePrice: { type: Number, required: true },
     timer: { type: Number, required: true },
     duration: { type: Number, required: true },
+    expiration: { type: Number, required: true },
+    condition: { tpe: Number },
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CyclingTypes",
+      required: true,
+    },
   },
   {
     timestamps: true,
