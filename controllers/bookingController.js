@@ -208,6 +208,19 @@ const findTrip = async (req, res) => {
     res.status(500).json({ error: "Failed to find trip" });
   }
 };
+
+const getTripHistory = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const history = await BookingDetailModel.find({ uid: user_id }).populate(
+      "bookingId"
+    );
+    res.json(history);
+  } catch (error) {
+    console.error("Error get trip history:", error);
+    res.status(500).json({ error: "Failed to get trip history" });
+  }
+};
 module.exports = {
   createBooking,
   createTripDetail,
@@ -217,4 +230,5 @@ module.exports = {
   createKeepCycling,
   startFromKeepCycling,
   cancalKeepCycling,
+  getTripHistory,
 };
