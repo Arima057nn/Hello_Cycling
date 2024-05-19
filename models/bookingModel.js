@@ -17,7 +17,11 @@ const BookingSchema = new mongoose.Schema(
       ref: "Stations",
       require: true,
     },
-
+    ticketId: {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: "Tickets",
+      require: true,
+    },
     status: { type: Number },
   },
   {

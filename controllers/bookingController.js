@@ -1,10 +1,13 @@
 const { BOOKING_STATUS } = require("../constants/booking");
 const { CYCLING_STATUS } = require("../constants/cycling");
+const { TICKET_TYPE } = require("../constants/ticket");
 const BookingDetailModel = require("../models/bookingDetailModel");
 const BookingModel = require("../models/bookingModel");
 const CyclingModel = require("../models/cyclingModel");
 const StationCyclingModel = require("../models/stationCyclingModel");
+const TicketModel = require("../models/ticketModel");
 const UserModel = require("../models/userModel");
+const UserTicketModel = require("../models/userTicketModel ");
 
 const createKeepCycling = async (req, res) => {
   try {
@@ -103,10 +106,51 @@ const createBooking = async (req, res) => {
       status: CYCLING_STATUS.ACTIVE,
     });
     await StationCyclingModel.deleteOne({ cyclingId: booking.cyclingId });
+
+    const cycling = await CyclingModel.findById(booking.cyclingId);
+    const userTickets = await UserTicketModel.find({
+      userId: user._id,
+    }).populate({ path: "ticketId", populate: { path: "categoryId" } });
+
+    const userTicketsFilter = userTickets.filter(
+      (userTicket) =>
+        userTicket.ticketId.categoryId._id.toHexString() ===
+        cycling.category.toHexString()
+    );
+    if (userTicketsFilter.length > 0) {
+      console.log("1. có vé");
+      if (userTicketsFilter[0].dateEnd > new Date()) {
+        console.log("2. vé còn hạn");
+        if (userTicketsFilter[0].usage < userTicketsFilter[0].ticketId.timer) {
+          console.log("3. vẫn còn thời gian để sử dụng, tạo booking ở đây");
+          const newBooking = await BookingModel.create({
+            userId: user._id,
+            cyclingId: booking.cyclingId,
+            startStation: booking.startStation,
+            status: BOOKING_STATUS.ACTIVE,
+            ticketId: userTicketsFilter[0].ticketId._id,
+          });
+          return res.json(newBooking);
+        } else {
+          console.log("3. đã dùng hết thời gian cho phép -> sử dụng vé lượt");
+        }
+      } else {
+        console.log("2. vé hết hạn -> sử dụng vé lượt");
+      }
+    } else {
+      console.log("1. không có vé -> sử dụng vé lượt");
+    }
+    const tickets = await TicketModel.find({
+      categoryId: cycling.category,
+    }).populate("type");
+    const ticket = tickets.filter(
+      (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
+    );
     const newBooking = await BookingModel.create({
       userId: user._id,
       cyclingId: booking.cyclingId,
       startStation: booking.startStation,
+      ticketId: ticket[0]._id,
       status: BOOKING_STATUS.ACTIVE,
     });
 
