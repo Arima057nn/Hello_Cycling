@@ -79,7 +79,7 @@ const findCyclingAtStation = async (req, res, next) => {
       cyclingId: cyclingId,
     })
       .populate("stationId")
-      .populate("cyclingId");
+      .populate({ path: "cyclingId", populate: { path: "category" } });
     res.json(cycling);
   } catch (error) {
     console.error("Error getting cycling at station:", error);
