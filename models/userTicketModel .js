@@ -13,7 +13,7 @@ const UserTicketSchema = new mongoose.Schema(
       require: true,
     },
     usage: { type: Number, required: true },
-    status: { type: Number, required: true },
+    status: { type: Number },
     dateEnd: { type: Date, required: true },
   },
   {

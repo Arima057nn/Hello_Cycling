@@ -1,4 +1,8 @@
+const { TICKET_TYPE } = require("../constants/ticket");
 const TicketModel = require("../models/ticketModel");
+const UserTicketModel = require("../models/userTicketModel ");
+const UserModel = require("../models/userModel");
+const TicketTypeModel = require("../models/ticketTypeModel");
 
 const createTicket = async (req, res) => {
   try {
@@ -12,6 +16,7 @@ const createTicket = async (req, res) => {
       condition,
       expiration,
       categoryId,
+      type,
     } = req.body;
 
     const newTicket = await TicketModel.create({
@@ -24,6 +29,7 @@ const createTicket = async (req, res) => {
       condition,
       expiration,
       categoryId,
+      type,
     });
 
     res.json(newTicket);
@@ -35,7 +41,9 @@ const createTicket = async (req, res) => {
 
 const getAllTicket = async (req, res) => {
   try {
-    const tickets = await TicketModel.find().populate("categoryId");
+    const tickets = await TicketModel.find()
+      .populate("categoryId")
+      .populate("type");
     res.json(tickets);
   } catch (error) {
     console.error("Error getting tickets:", error);
@@ -43,4 +51,95 @@ const getAllTicket = async (req, res) => {
   }
 };
 
-module.exports = { createTicket, getAllTicket };
+const createTicketType = async (req, res) => {
+  try {
+    const { name, value } = req.body;
+    const newTicketType = await TicketTypeModel.create({ name, value });
+    res.json(newTicketType);
+  } catch (error) {
+    console.error("Error creating ticket type:", error);
+    res.status(500).json({ error: "Failed to create ticket type" });
+  }
+};
+
+const getAllTicketType = async (req, res) => {
+  try {
+    const ticketTypes = await TicketTypeModel.find();
+    res.json(ticketTypes);
+  } catch (error) {
+    console.error("Error getting ticket types:", error);
+    res.status(500).json({ error: "Failed to get ticket types" });
+  }
+};
+
+const getMyTickets = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const userTickets = await UserTicketModel.find({
+      userId: user._id,
+    }).populate({ path: "ticketId", populate: { path: "categoryId" } });
+    res.json(userTickets);
+  } catch (error) {
+    console.error("Error getting user tickets:", error);
+    res.status(500).json({ error: "Failed to get user tickets" });
+  }
+};
+
+const buyTicket = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const { ticketId } = req.body;
+    const ticket = await TicketModel.findById({ _id: ticketId }).populate(
+      "type"
+    );
+    if (ticket && ticket.type.value === TICKET_TYPE.DEFAULT) {
+      return res.status(400).json({ error: "This ticket is defatult" });
+    }
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const userTickets = await UserTicketModel.find({
+      userId: user._id,
+    }).populate("ticketId");
+
+    const userTicketsFilter = userTickets.filter(
+      (userTicket) =>
+        userTicket.ticketId.categoryId.toHexString() ===
+        ticket.categoryId.toHexString()
+    );
+    if (userTicketsFilter.length > 0) {
+      if (userTicketsFilter[0].dateEnd > new Date()) {
+        return res.status(400).json({ error: "User already on ticket" });
+      } else {
+        await UserTicketModel.deleteOne({ _id: userTicketsFilter[0]._id });
+      }
+    }
+    const userTicket = await UserTicketModel.create({
+      userId: user._id,
+      ticketId,
+      usage: 0,
+      dateEnd: new Date(
+        new Date().getTime() + 1000 * 60 * 60 * ticket.expiration
+      ),
+    });
+
+    res.json({ userTicket, message: "Buy ticket success" });
+  } catch (error) {
+    console.error("Error buying ticket:", error);
+    res.status(500).json({ error: "Failed to buy ticket" });
+  }
+};
+
+module.exports = {
+  createTicket,
+  getAllTicket,
+  createTicketType,
+  buyTicket,
+  getAllTicketType,
+  getMyTickets,
+};
