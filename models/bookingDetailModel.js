@@ -15,6 +15,7 @@ const BookingDetailSchema = new mongoose.Schema(
     },
     total: { type: Number },
     tripHistory: { type: Array },
+    payment: { type: Number },
   },
   {
     timestamps: true,

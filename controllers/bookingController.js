@@ -8,6 +8,7 @@ const StationCyclingModel = require("../models/stationCyclingModel");
 const TicketModel = require("../models/ticketModel");
 const UserModel = require("../models/userModel");
 const UserTicketModel = require("../models/userTicketModel ");
+const { overduePriceToPay } = require("../utils/overduePrice");
 
 const createKeepCycling = async (req, res) => {
   try {
@@ -164,14 +165,63 @@ const createBooking = async (req, res) => {
 const createTripDetail = async (req, res) => {
   const { user_id } = req.user;
   const { bookingId, status, endStation } = req.body;
+  let payment = 0;
   try {
-    const booking = await BookingModel.findById(bookingId);
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const booking = await BookingModel.findById(bookingId).populate({
+      path: "ticketId",
+      populate: { path: "type" },
+    });
+
     const date = new Date();
     const total = Math.floor((date - booking.createdAt) / 60000);
     if (!booking) {
       return res.status(404).json({ error: "Booking not found" });
     }
     const cycling = await CyclingModel.findById(booking.cyclingId);
+    if (booking.ticketId.type.value !== TICKET_TYPE.DEFAULT) {
+      const userTicket = await UserTicketModel.findOne({
+        userId: user._id,
+        ticketId: booking.ticketId._id,
+      });
+      // check xem tổng usage lớn hơn timer => Tạo hóa đơn tính tiền => API transaction
+      if (userTicket.usage + total > booking.ticketId.timer) {
+        payment = overduePriceToPay(
+          userTicket.usage + total - booking.ticketId.timer,
+          booking.ticketId.overduePrice,
+          booking.ticketId.duration
+        );
+        user.balance -= payment;
+        console.log("tinh tien thoi", payment);
+      } else {
+        console.log("khong tinh tien, payment =", payment);
+      }
+      userTicket.usage = userTicket.usage + total;
+      await userTicket.save();
+    } else {
+      // check xem total có lớn hơn timer không =? Tạo hóa đơn tính tiền => API transaction
+      if (total > booking.ticketId.timer) {
+        payment = overduePriceToPay(
+          total - booking.ticketId.timer,
+          booking.ticketId.overduePrice,
+          booking.ticketId.duration
+        );
+        user.balance -= payment;
+        console.log("tinh tien thoi", payment);
+      } else {
+        console.log(
+          "khong tinh tien, payment =",
+          booking.ticketId.timer,
+          payment
+        );
+      }
+    }
+    console.log("booking", booking.ticketId.type.value, total);
+    // res.json("hehe");
+
     booking.status = status;
     await booking.save();
     const newBookingDetail = await BookingDetailModel.create({
@@ -180,7 +230,10 @@ const createTripDetail = async (req, res) => {
       endStation,
       total,
       tripHistory: cycling.coordinate,
+      payment,
     });
+    user.point += total;
+    await user.save();
     await StationCyclingModel.create({
       stationId: endStation,
       cyclingId: booking.cyclingId,

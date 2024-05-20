@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema(
     phone: { type: String, unique: true, required: true },
     point: { type: Number },
     member: { type: Number },
+    balance: { type: Number },
   },
   {
     timestamps: true,
