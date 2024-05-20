@@ -1,11 +1,13 @@
 const { BOOKING_STATUS } = require("../constants/booking");
 const { CYCLING_STATUS } = require("../constants/cycling");
 const { TICKET_TYPE } = require("../constants/ticket");
+const { TRANSACTION_ACTION } = require("../constants/transaction");
 const BookingDetailModel = require("../models/bookingDetailModel");
 const BookingModel = require("../models/bookingModel");
 const CyclingModel = require("../models/cyclingModel");
 const StationCyclingModel = require("../models/stationCyclingModel");
 const TicketModel = require("../models/ticketModel");
+const TransactionModel = require("../models/transactionModel");
 const UserModel = require("../models/userModel");
 const UserTicketModel = require("../models/userTicketModel ");
 const { overduePriceToPay } = require("../utils/overduePrice");
@@ -242,6 +244,15 @@ const createTripDetail = async (req, res) => {
       status: CYCLING_STATUS.READY,
       coordinate: [],
     });
+    if (payment > 0) {
+      await TransactionModel.create({
+        title: TRANSACTION_ACTION[0].title,
+        userId: user._id,
+        type: TRANSACTION_ACTION[0].type,
+        payment: payment,
+        status: 1,
+      });
+    }
     res.json(newBookingDetail);
   } catch (error) {
     console.error("Error create trip detail:", error);

@@ -3,6 +3,8 @@ const TicketModel = require("../models/ticketModel");
 const UserTicketModel = require("../models/userTicketModel ");
 const UserModel = require("../models/userModel");
 const TicketTypeModel = require("../models/ticketTypeModel");
+const TransactionModel = require("../models/transactionModel");
+const { TRANSACTION_ACTION } = require("../constants/transaction");
 
 const createTicket = async (req, res) => {
   try {
@@ -126,6 +128,13 @@ const buyTicket = async (req, res) => {
       dateEnd: new Date(
         new Date().getTime() + 1000 * 60 * 60 * ticket.expiration
       ),
+    });
+    await TransactionModel.create({
+      title: TRANSACTION_ACTION[1].title,
+      userId: user._id,
+      type: TRANSACTION_ACTION[1].type,
+      payment: ticket.price,
+      status: 1,
     });
 
     res.json({ userTicket, message: "Buy ticket success" });
