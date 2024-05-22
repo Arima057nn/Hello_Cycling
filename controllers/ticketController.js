@@ -5,6 +5,7 @@ const UserModel = require("../models/userModel");
 const TicketTypeModel = require("../models/ticketTypeModel");
 const TransactionModel = require("../models/transactionModel");
 const { TRANSACTION_ACTION } = require("../constants/transaction");
+const CyclingModel = require("../models/cyclingModel");
 
 const createTicket = async (req, res) => {
   try {
@@ -91,6 +92,43 @@ const getMyTickets = async (req, res) => {
   }
 };
 
+const selectTicketToUse = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const { cyclingId } = req.query;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const cycling = await CyclingModel.findById(cyclingId);
+    const userTickets = await UserTicketModel.find({
+      userId: user._id,
+    }).populate({ path: "ticketId", populate: { path: "categoryId" } });
+    const userTicketsFilter = userTickets.filter(
+      (userTicket) =>
+        userTicket.ticketId.categoryId._id.toHexString() ===
+        cycling.category.toHexString()
+    );
+    if (userTicketsFilter.length > 0) {
+      if (userTicketsFilter[0].dateEnd > new Date()) {
+        if (userTicketsFilter[0].usage < userTicketsFilter[0].ticketId.timer) {
+          return res.json(userTicketsFilter[0].ticketId);
+        }
+      }
+    }
+    const tickets = await TicketModel.find({
+      categoryId: cycling.category,
+    }).populate("type");
+    const ticket = tickets.filter(
+      (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
+    );
+    res.json(ticket[0]);
+  } catch (error) {
+    console.error("Error getting user tickets:", error);
+    res.status(500).json({ error: "Failed to get user tickets" });
+  }
+};
+
 const buyTicket = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -151,4 +189,5 @@ module.exports = {
   buyTicket,
   getAllTicketType,
   getMyTickets,
+  selectTicketToUse,
 };
