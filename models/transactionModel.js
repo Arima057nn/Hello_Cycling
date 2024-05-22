@@ -12,7 +12,7 @@ const TransactionSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.ObjectId,
       ref: "BookingDetails",
     },
-    type: { type: String, required: true },
+    type: { type: Number, required: true },
     payment: { type: Number, required: true },
     status: { type: Number },
   },

@@ -174,7 +174,8 @@ const buyTicket = async (req, res) => {
       payment: ticket.price,
       status: 1,
     });
-
+    user.balance -= ticket.price;
+    await user.save();
     res.json({ userTicket, message: "Buy ticket success" });
   } catch (error) {
     console.error("Error buying ticket:", error);
@@ -182,6 +183,21 @@ const buyTicket = async (req, res) => {
   }
 };
 
+const cancelTicket = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const { bookingId } = req.body;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    await UserTicketModel.findByIdAndDelete(bookingId);
+    res.json({ message: "Cancel ticket success" });
+  } catch (error) {
+    console.error("Error cancel ticket:", error);
+    res.status(500).json({ error: "Failed to cancel ticket" });
+  }
+};
 module.exports = {
   createTicket,
   getAllTicket,
@@ -190,4 +206,5 @@ module.exports = {
   getAllTicketType,
   getMyTickets,
   selectTicketToUse,
+  cancelTicket,
 };

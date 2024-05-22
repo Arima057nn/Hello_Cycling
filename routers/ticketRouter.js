@@ -7,6 +7,7 @@ const {
   getAllTicketType,
   getMyTickets,
   selectTicketToUse,
+  cancelTicket,
 } = require("../controllers/ticketController");
 const { authenTokenUser } = require("../middleware/auth");
 
@@ -19,5 +20,6 @@ router.post("/type", createTicketType);
 router.get("/type", getAllTicketType);
 router.post("/buy", authenTokenUser, buyTicket);
 router.get("/select", authenTokenUser, selectTicketToUse);
+router.post("/cancel", authenTokenUser, cancelTicket);
 
 module.exports = router;

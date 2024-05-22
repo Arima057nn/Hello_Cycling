@@ -11,7 +11,7 @@ const TRANSACTION_STATUS = {
 
 const TRANSACTION_ACTION = [
   (OVERDUE_PAY = {
-    title: "Thanh toán sử dụng thêm",
+    title: "Thanh toán sử dụng",
     type: TRANSACTION_TYPE.MINUS,
   }),
   (BUY_TICKET = {
@@ -21,6 +21,10 @@ const TRANSACTION_ACTION = [
   (DEPOSIT = {
     title: "Nạp tiền",
     type: TRANSACTION_TYPE.ADD,
+  }),
+  (CANCAL_KEEPING = {
+    title: "Hủy giữ xe",
+    type: TRANSACTION_TYPE.MINUS,
   }),
 ];
 
