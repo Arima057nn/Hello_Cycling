@@ -36,13 +36,48 @@ const createKeepCycling = async (req, res) => {
       }
     } else return res.status(404).json({ error: "User already on the trips" });
 
+    const stationCycling = await StationCyclingModel.findOne({
+      cyclingId: cyclingId,
+      stationId: startStation,
+    });
+
+    if (!stationCycling) {
+      return res.status(400).json({ error: "Xe không ở trạm này" });
+    }
+    const cycling = await CyclingModel.findById(cyclingId);
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
     const ticket = await TicketModel.findById(ticketId).populate("type");
+    if (
+      ticket.type.value === TICKET_TYPE.DAY &&
+      user.balance < ticket.price / 10
+    ) {
+      return res.status(400).json({
+        error: `Bạn đang sử dụng vé ngày, tài khoản phải trên ${
+          ticket.price / 10
+        } mới có thể đặt giữ xe`,
+      });
+    } else if (
+      ticket.type.value === TICKET_TYPE.MONTHLY &&
+      user.balance < ticket.price / 24
+    ) {
+      return res.status(400).json({
+        error: `Bạn đang sử dụng vé tháng, tài khoản phải trên ${
+          ticket.price / 24
+        } mới có thể đặt giữ xe`,
+      });
+    }
 
     if (
       ticket.type.value === TICKET_TYPE.DEFAULT &&
       user.balance < ticket.price * 2
     ) {
-      return res.status(400).json({ error: "Not enough balance" });
+      return res.status(400).json({
+        error: `Bạn đang sử dụng vé lượt, tài khoản phải trên ${
+          ticket.price * 2
+        } mới có thể đặt giữ xe`,
+      });
     }
     const newKeepBooking = await BookingModel.create({
       userId: user._id,
@@ -51,9 +86,8 @@ const createKeepCycling = async (req, res) => {
       status: BOOKING_STATUS.KEEPING,
       ticketId: ticketId,
     });
-    await CyclingModel.findByIdAndUpdate(cyclingId, {
-      status: CYCLING_STATUS.KEEPING,
-    });
+    cycling.status = CYCLING_STATUS.KEEPING;
+    await cycling.save();
     res.json(newKeepBooking);
   } catch (error) {
     console.error("Error keep cycling:", error);
@@ -68,12 +102,17 @@ const startFromKeepCycling = async (req, res) => {
     if (!keepBooking) {
       return res.status(404).json({ error: "User not on the keep trips" });
     }
+    if (keepBooking.status !== BOOKING_STATUS.KEEPING) {
+      return res.status(400).json({ error: "User not on the keep trips" });
+    } else if (keepBooking.status === BOOKING_STATUS.ACTIVE) {
+      return res.status(400).json({ error: "User already on the trips" });
+    }
     await StationCyclingModel.deleteOne({ cyclingId: keepBooking.cyclingId });
     await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
       status: CYCLING_STATUS.ACTIVE,
     });
     keepBooking.status = BOOKING_STATUS.ACTIVE;
-    keepBooking.createdAt = new Date();
+    keepBooking.createdAt = new Date(Date.now());
     await keepBooking.save();
     res.json(keepBooking);
   } catch (error) {
@@ -140,7 +179,19 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ error: "User already on the trips" });
     }
 
+    const stationCycling = await StationCyclingModel.findOne({
+      cyclingId: booking.cyclingId,
+      stationId: booking.startStation,
+    });
+
+    if (!stationCycling) {
+      return res.status(400).json({ error: "Xe không ở trạm này" });
+    }
+
     const cycling = await CyclingModel.findById(booking.cyclingId);
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
     const userTickets = await UserTicketModel.find({
       userId: user._id,
     }).populate({ path: "ticketId", populate: { path: "categoryId" } });
@@ -163,6 +214,10 @@ const createBooking = async (req, res) => {
             status: BOOKING_STATUS.ACTIVE,
             ticketId: userTicketsFilter[0].ticketId._id,
           });
+          await CyclingModel.findByIdAndUpdate(booking.cyclingId, {
+            status: CYCLING_STATUS.ACTIVE,
+          });
+          await StationCyclingModel.deleteOne({ cyclingId: booking.cyclingId });
           return res.json(newBooking);
         } else {
           console.log("3. đã dùng hết thời gian cho phép -> sử dụng vé lượt");
@@ -181,8 +236,12 @@ const createBooking = async (req, res) => {
     );
 
     if (user.balance < ticket[0].price * 2) {
-      return res.status(400).json({ error: "Not enough balance" });
+      return res.status(400).json({
+        error: `Tài khoảng trên ${ticket[0].price * 2} mới có thể đặt xe`,
+      });
     }
+    user.balance -= ticket[0].price;
+    await user.save();
 
     const newBooking = await BookingModel.create({
       userId: user._id,
@@ -238,7 +297,7 @@ const createTripDetail = async (req, res) => {
           booking.ticketId.duration
         );
         user.balance -= payment;
-        console.log("tinh tien thoi", payment);
+        console.log("tinh tien vé ngày/tháng sử dụng thêm", payment);
       } else {
         console.log("khong tinh tien, payment =", payment);
       }
@@ -247,24 +306,23 @@ const createTripDetail = async (req, res) => {
     } else {
       // check xem total có lớn hơn timer không =? Tạo hóa đơn tính tiền => API transaction
       if (total > booking.ticketId.timer) {
-        payment =
-          overduePriceToPay(
-            total - booking.ticketId.timer,
-            booking.ticketId.overduePrice,
-            booking.ticketId.duration
-          ) + booking.ticketId.price;
+        payment = overduePriceToPay(
+          total - booking.ticketId.timer,
+          booking.ticketId.overduePrice,
+          booking.ticketId.duration
+        );
         user.balance -= payment;
-        console.log("tinh tien thoi", payment);
+        console.log("tinh tien them thoi", payment);
+        payment += booking.ticketId.price;
       } else {
         console.log(
-          "khong tinh tien, payment =",
-          booking.ticketId.timer,
-          payment
+          "khong tinh tien, chi tinh tien mua ve luot, payment =",
+          booking.ticketId.price
         );
+        payment = booking.ticketId.price;
       }
     }
     console.log("booking", booking.ticketId.type.value, total);
-    // res.json("hehe");
 
     booking.status = status;
     await booking.save();
