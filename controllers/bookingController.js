@@ -35,16 +35,24 @@ const createKeepCycling = async (req, res) => {
           .json({ error: "User already on the keep trips" });
       }
     } else return res.status(404).json({ error: "User already on the trips" });
-    await CyclingModel.findByIdAndUpdate(cyclingId, {
-      status: CYCLING_STATUS.KEEPING,
-    });
 
+    const ticket = await TicketModel.findById(ticketId).populate("type");
+
+    if (
+      ticket.type.value === TICKET_TYPE.DEFAULT &&
+      user.balance < ticket.price * 2
+    ) {
+      return res.status(400).json({ error: "Not enough balance" });
+    }
     const newKeepBooking = await BookingModel.create({
       userId: user._id,
       cyclingId: cyclingId,
       startStation: startStation,
       status: BOOKING_STATUS.KEEPING,
       ticketId: ticketId,
+    });
+    await CyclingModel.findByIdAndUpdate(cyclingId, {
+      status: CYCLING_STATUS.KEEPING,
     });
     res.json(newKeepBooking);
   } catch (error) {
@@ -102,7 +110,7 @@ const cancalKeepCycling = async (req, res) => {
       title: TRANSACTION_ACTION[3].title,
       userId: user._id,
       type: TRANSACTION_ACTION[3].type,
-      payment: ticket[0].price,
+      payment: ticket[0].price / 2,
       status: 1,
     });
     user.balance -= ticket[0].price / 2;
@@ -131,10 +139,6 @@ const createBooking = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ error: "User already on the trips" });
     }
-    await CyclingModel.findByIdAndUpdate(booking.cyclingId, {
-      status: CYCLING_STATUS.ACTIVE,
-    });
-    await StationCyclingModel.deleteOne({ cyclingId: booking.cyclingId });
 
     const cycling = await CyclingModel.findById(booking.cyclingId);
     const userTickets = await UserTicketModel.find({
@@ -175,6 +179,11 @@ const createBooking = async (req, res) => {
     const ticket = tickets.filter(
       (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
     );
+
+    if (user.balance < ticket[0].price * 2) {
+      return res.status(400).json({ error: "Not enough balance" });
+    }
+
     const newBooking = await BookingModel.create({
       userId: user._id,
       cyclingId: booking.cyclingId,
@@ -182,6 +191,12 @@ const createBooking = async (req, res) => {
       ticketId: ticket[0]._id,
       status: BOOKING_STATUS.ACTIVE,
     });
+
+    await CyclingModel.findByIdAndUpdate(booking.cyclingId, {
+      status: CYCLING_STATUS.ACTIVE,
+    });
+
+    await StationCyclingModel.deleteOne({ cyclingId: booking.cyclingId });
 
     res.json(newBooking);
   } catch (error) {
