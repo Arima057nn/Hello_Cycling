@@ -14,36 +14,38 @@ const { overduePriceToPay } = require("../utils/overduePrice");
 
 const createKeepCycling = async (req, res) => {
   try {
-    const { cyclingId, startStation } = req.body;
-    const user = req.user;
-    const existingBooking = await BookingModel.findOne({
-      userId: user.userId,
+    const { cyclingId, startStation, ticketId } = req.body;
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    let existingBooking = await BookingModel.findOne({
+      userId: user._id,
       status: BOOKING_STATUS.ACTIVE,
     });
     if (!existingBooking) {
-      const existingKeepingBooking = await BookingModel.findOne({
-        userId: user.userId,
+      existingBooking = await BookingModel.findOne({
+        userId: user._id,
         status: BOOKING_STATUS.KEEPING,
       });
-      if (existingKeepingBooking) {
+      if (existingBooking) {
         return res
           .status(404)
           .json({ error: "User already on the keep trips" });
       }
     } else return res.status(404).json({ error: "User already on the trips" });
+    await CyclingModel.findByIdAndUpdate(cyclingId, {
+      status: CYCLING_STATUS.KEEPING,
+    });
 
-    const cycling = await CyclingModel.findById(cyclingId);
-    if (cycling && cycling.status === CYCLING_STATUS.READY) {
-      cycling.status = CYCLING_STATUS.KEEPING;
-      await cycling.save();
-    }
     const newKeepBooking = await BookingModel.create({
-      userId: user.userId,
+      userId: user._id,
       cyclingId: cyclingId,
       startStation: startStation,
       status: BOOKING_STATUS.KEEPING,
+      ticketId: ticketId,
     });
-
     res.json(newKeepBooking);
   } catch (error) {
     console.error("Error keep cycling:", error);
@@ -53,16 +55,17 @@ const createKeepCycling = async (req, res) => {
 
 const startFromKeepCycling = async (req, res) => {
   try {
-    const user = req.user;
-    const keepBooking = BookingModel.findOne({
-      userId: user.userId,
-      status: BOOKING_STATUS.KEEPING,
-    });
+    const { bookingId } = req.body;
+    const keepBooking = await BookingModel.findById(bookingId);
     if (!keepBooking) {
       return res.status(404).json({ error: "User not on the keep trips" });
     }
     await StationCyclingModel.deleteOne({ cyclingId: keepBooking.cyclingId });
+    await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
+      status: CYCLING_STATUS.ACTIVE,
+    });
     keepBooking.status = BOOKING_STATUS.ACTIVE;
+    keepBooking.createdAt = new Date();
     await keepBooking.save();
     res.json(keepBooking);
   } catch (error) {
@@ -73,17 +76,40 @@ const startFromKeepCycling = async (req, res) => {
 
 const cancalKeepCycling = async (req, res) => {
   try {
-    const user = req.user;
-    const keepBooking = BookingModel.findOne({
-      userId: user.userId,
-      status: BOOKING_STATUS.KEEPING,
-    });
+    const { user_id } = req.user;
+    const { bookingId, category } = req.body;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const keepBooking = await BookingModel.findById(bookingId);
     if (!keepBooking) {
       return res.status(404).json({ error: "User not on the keep trips" });
     }
-    keepBooking.status = BOOKING_STATUS.CANCEL;
-    await keepBooking.save();
-    res.json(keepBooking);
+    cycling = await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
+      status: CYCLING_STATUS.READY,
+    });
+    await BookingModel.findByIdAndDelete(bookingId);
+
+    const tickets = await TicketModel.find({ categoryId: category }).populate(
+      "type"
+    );
+    const ticket = tickets.filter(
+      (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
+    );
+
+    await TransactionModel.create({
+      title: TRANSACTION_ACTION[3].title,
+      userId: user._id,
+      type: TRANSACTION_ACTION[3].type,
+      payment: ticket[0].price,
+      status: 1,
+    });
+    user.balance -= ticket[0].price / 2;
+    await user.save();
+    res.json({
+      message: "Cancel keep cycling successfully",
+    });
   } catch (error) {
     console.error("Error cancel keep cycling:", error);
     res.status(500).json({ error: "Failed to cancel keep cycling" });
@@ -206,11 +232,12 @@ const createTripDetail = async (req, res) => {
     } else {
       // check xem total có lớn hơn timer không =? Tạo hóa đơn tính tiền => API transaction
       if (total > booking.ticketId.timer) {
-        payment = overduePriceToPay(
-          total - booking.ticketId.timer,
-          booking.ticketId.overduePrice,
-          booking.ticketId.duration
-        );
+        payment =
+          overduePriceToPay(
+            total - booking.ticketId.timer,
+            booking.ticketId.overduePrice,
+            booking.ticketId.duration
+          ) + booking.ticketId.price;
         user.balance -= payment;
         console.log("tinh tien thoi", payment);
       } else {
@@ -303,20 +330,41 @@ const findTrip = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    const trip = await BookingModel.findOne({
-      status: BOOKING_STATUS.ACTIVE,
+    let existingBooking = await BookingModel.findOne({
       userId: user._id,
+      status: BOOKING_STATUS.ACTIVE,
     });
-    if (!trip) {
-      return res.status(404).json({ error: "Trip not found" });
+    if (!existingBooking) {
+      existingBooking = await BookingModel.findOne({
+        userId: user._id,
+        status: BOOKING_STATUS.KEEPING,
+      });
+      if (!existingBooking) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
     }
-    res.json(trip);
+    res.json(existingBooking);
   } catch (error) {
     console.error("Error find trip:", error);
     res.status(500).json({ error: "Failed to find trip" });
   }
 };
 
+const findTripById = async (req, res) => {
+  try {
+    const { bookingId } = req.query;
+    const trip = await BookingModel.findById(bookingId)
+      .populate({ path: "cyclingId", populate: { path: "category" } })
+      .populate("startStation");
+    if (!trip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+    res.json(trip);
+  } catch (error) {
+    console.error("Error find trip by id:", error);
+    res.status(500).json({ error: "Failed to find trip by id" });
+  }
+};
 const getTripHistory = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -329,14 +377,45 @@ const getTripHistory = async (req, res) => {
     res.status(500).json({ error: "Failed to get trip history" });
   }
 };
+
+const deleteBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.query;
+    const trip = await BookingModel.findByIdAndDelete(bookingId);
+    if (!trip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+    res.json({ message: "Delete booking successfully" });
+  } catch (error) {
+    console.error("Error find trip by id:", error);
+    res.status(500).json({ error: "Failed to find trip by id" });
+  }
+};
+const deleteBookingDetail = async (req, res) => {
+  try {
+    const { bookingId } = req.query;
+    const trip = await BookingDetailModel.findByIdAndDelete(bookingId);
+    if (!trip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+    res.json({ message: "Delete booking successfully" });
+  } catch (error) {
+    console.error("Error find trip by id:", error);
+    res.status(500).json({ error: "Failed to find trip by id" });
+  }
+};
+
 module.exports = {
   createBooking,
   createTripDetail,
   deleteAllBooking,
   getTripDetail,
   findTrip,
+  findTripById,
   createKeepCycling,
   startFromKeepCycling,
   cancalKeepCycling,
   getTripHistory,
+  deleteBooking,
+  deleteBookingDetail,
 };

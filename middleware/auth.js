@@ -16,7 +16,9 @@ const authenTokenUser = async (req, res, next) => {
     })
     .catch((error) => {
       console.error("Error verifying token:", error.code);
-      return res.status(403).send(`Error verifying token: ${error.code}`);
+      return res
+        .status(403)
+        .send({ error: `Quá phiên truy cập, vui trong truy cập lại app !` });
     });
 };
 

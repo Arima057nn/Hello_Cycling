@@ -159,6 +159,9 @@ const buyTicket = async (req, res) => {
         await UserTicketModel.deleteOne({ _id: userTicketsFilter[0]._id });
       }
     }
+    if (user.balance < 0 || user.balance < ticket.price) {
+      return res.status(400).json({ error: "Not enough money" });
+    }
     const userTicket = await UserTicketModel.create({
       userId: user._id,
       ticketId,

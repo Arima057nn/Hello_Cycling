@@ -7,6 +7,11 @@ const {
   findTrip,
   createKeepCycling,
   getTripHistory,
+  findTripById,
+  startFromKeepCycling,
+  cancalKeepCycling,
+  deleteBooking,
+  deleteBookingDetail,
 } = require("../controllers/bookingController");
 const { authenTokenUser } = require("../middleware/auth");
 
@@ -17,6 +22,12 @@ router.post("/tripDetail", authenTokenUser, createTripDetail);
 router.delete("/delete", deleteAllBooking);
 router.get("/tripDetail", getTripDetail);
 router.get("/findTrip", authenTokenUser, findTrip);
+router.get("/findTripById", authenTokenUser, findTripById);
 router.post("/createKeep", authenTokenUser, createKeepCycling);
 router.get("/history", authenTokenUser, getTripHistory);
+router.post("/start", authenTokenUser, startFromKeepCycling);
+router.post("/cancel", authenTokenUser, cancalKeepCycling);
+router.get("/deleteOne", deleteBooking);
+router.get("/deleteDetailOne", deleteBookingDetail);
+
 module.exports = router;
