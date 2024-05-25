@@ -4,11 +4,12 @@ const {
   Callback,
   TransactionStatus,
 } = require("../controllers/paymentController");
+const { authenTokenUser } = require("../middleware/auth");
 
 const router = express.Router();
 
-router.post("/momo", Momo);
+router.post("/momo", authenTokenUser, Momo);
 router.post("/callback", Callback);
-router.post("/transaction-status", TransactionStatus);
+router.post("/transaction-status", authenTokenUser, TransactionStatus);
 
 module.exports = router;
