@@ -103,18 +103,21 @@ const startFromKeepCycling = async (req, res) => {
       return res.status(404).json({ error: "User not on the keep trips" });
     }
     if (keepBooking.status !== BOOKING_STATUS.KEEPING) {
-      return res.status(400).json({ error: "User not on the keep trips" });
-    } else if (keepBooking.status === BOOKING_STATUS.ACTIVE) {
       return res.status(400).json({ error: "User already on the trips" });
     }
+    const newBooking = await BookingModel.create({
+      userId: keepBooking.userId,
+      cyclingId: keepBooking.cyclingId,
+      startStation: keepBooking.startStation,
+      status: BOOKING_STATUS.ACTIVE,
+      ticketId: keepBooking.ticketId,
+    });
     await StationCyclingModel.deleteOne({ cyclingId: keepBooking.cyclingId });
     await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
       status: CYCLING_STATUS.ACTIVE,
     });
-    keepBooking.status = BOOKING_STATUS.ACTIVE;
-    keepBooking.createdAt = new Date(Date.now());
-    await keepBooking.save();
-    res.json(keepBooking);
+    await BookingModel.findByIdAndDelete(bookingId);
+    res.json(newBooking);
   } catch (error) {
     console.error("Error start from keep cycling:", error);
     res.status(500).json({ error: "Failed to start from keep cycling" });
