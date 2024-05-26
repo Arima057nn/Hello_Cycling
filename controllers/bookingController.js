@@ -84,7 +84,6 @@ const createKeepCycling = async (req, res) => {
         userId: user._id,
         ticketId: ticketId,
       });
-      console.log("ticket", userTicket);
       if (!userTicket) {
         return res.status(404).json({ error: "Bạn chưa mua vé này" });
       } else {
@@ -303,7 +302,6 @@ const createTripDetail = async (req, res) => {
         userId: user._id,
         ticketId: booking.ticketId._id,
       });
-      // check xem tổng usage lớn hơn timer => Tạo hóa đơn tính tiền => API transaction
       if (userTicket.usage + total > booking.ticketId.timer) {
         payment = overduePriceToPay(
           userTicket.usage + total - booking.ticketId.timer,
@@ -311,15 +309,11 @@ const createTripDetail = async (req, res) => {
           booking.ticketId.duration
         );
         user.balance -= payment;
-        console.log("tinh tien vé ngày/tháng sử dụng thêm", payment);
-      } else {
-        console.log("khong tinh tien, payment =", payment);
       }
       userTicket.usage = userTicket.usage + total;
       userTicket.status = USER_TICKET_STATUS.READY;
       await userTicket.save();
     } else {
-      // check xem total có lớn hơn timer không =? Tạo hóa đơn tính tiền => API transaction
       if (total > booking.ticketId.timer) {
         payment = overduePriceToPay(
           total - booking.ticketId.timer,
@@ -327,17 +321,11 @@ const createTripDetail = async (req, res) => {
           booking.ticketId.duration
         );
         user.balance -= payment;
-        console.log("tinh tien them thoi", payment);
         payment += booking.ticketId.price;
       } else {
-        console.log(
-          "khong tinh tien, chi tinh tien mua ve luot, payment =",
-          booking.ticketId.price
-        );
         payment = booking.ticketId.price;
       }
     }
-    console.log("booking", booking.ticketId.type.value, total);
 
     booking.status = status;
     await booking.save();
@@ -399,7 +387,6 @@ const deleteAllBookingDetail = async (req, res) => {
 const getTripDetail = async (req, res) => {
   try {
     const bookingId = req.query.bookingId;
-    console.log("booking:", bookingId);
     const tripDetail = await BookingDetailModel.findOne({ bookingId });
     if (!tripDetail) {
       return res.status(404).json({ error: "Trip detail not found" });
