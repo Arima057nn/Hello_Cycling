@@ -1,6 +1,6 @@
 const { BOOKING_STATUS } = require("../constants/booking");
 const { CYCLING_STATUS } = require("../constants/cycling");
-const { TICKET_TYPE } = require("../constants/ticket");
+const { TICKET_TYPE, USER_TICKET_STATUS } = require("../constants/ticket");
 const { TRANSACTION_ACTION } = require("../constants/transaction");
 const BookingDetailModel = require("../models/bookingDetailModel");
 const BookingModel = require("../models/bookingModel");
@@ -71,16 +71,26 @@ const createKeepCycling = async (req, res) => {
         } mới có thể đặt giữ xe`,
       });
     }
-
-    if (
-      ticket.type.value === TICKET_TYPE.DEFAULT &&
-      user.balance < ticket.price * 2
-    ) {
-      return res.status(400).json({
-        error: `Bạn đang sử dụng vé lượt, tài khoản phải trên ${
-          ticket.price * 2
-        } mới có thể đặt giữ xe`,
+    let userTicket;
+    if (ticket.type.value === TICKET_TYPE.DEFAULT) {
+      if (user.balance < ticket.price * 2)
+        return res.status(400).json({
+          error: `Bạn đang sử dụng vé lượt, tài khoản phải trên ${
+            ticket.price * 2
+          } mới có thể đặt giữ xe`,
+        });
+    } else {
+      userTicket = await UserTicketModel.findOne({
+        userId: user._id,
+        ticketId: ticketId,
       });
+      console.log("ticket", userTicket);
+      if (!userTicket) {
+        return res.status(404).json({ error: "Bạn chưa mua vé này" });
+      } else {
+        userTicket.status = USER_TICKET_STATUS.KEEPING;
+        await userTicket.save();
+      }
     }
     const newKeepBooking = await BookingModel.create({
       userId: user._id,
@@ -100,6 +110,11 @@ const createKeepCycling = async (req, res) => {
 
 const startFromKeepCycling = async (req, res) => {
   try {
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
     const { bookingId } = req.body;
     const keepBooking = await BookingModel.findById(bookingId);
     if (!keepBooking) {
@@ -115,6 +130,10 @@ const startFromKeepCycling = async (req, res) => {
       status: BOOKING_STATUS.ACTIVE,
       ticketId: keepBooking.ticketId,
     });
+    await UserTicketModel.findOneAndUpdate(
+      { userId: user._id, ticketId: keepBooking.ticketId },
+      { status: USER_TICKET_STATUS.ACTIVE }
+    );
     await StationCyclingModel.deleteOne({ cyclingId: keepBooking.cyclingId });
     await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
       status: CYCLING_STATUS.ACTIVE,
@@ -139,11 +158,15 @@ const cancalKeepCycling = async (req, res) => {
     if (!keepBooking) {
       return res.status(404).json({ error: "User not on the keep trips" });
     }
-    cycling = await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
+    await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
       status: CYCLING_STATUS.READY,
     });
     await BookingModel.findByIdAndDelete(bookingId);
 
+    await UserTicketModel.findOneAndUpdate(
+      { userId: user._id, ticketId: keepBooking.ticketId },
+      { status: USER_TICKET_STATUS.READY }
+    );
     const tickets = await TicketModel.find({ categoryId: category }).populate(
       "type"
     );
@@ -212,7 +235,7 @@ const createBooking = async (req, res) => {
     if (!ticket) {
       return res.status(404).json({ error: "Không tìm thấy vé" });
     }
-
+    let userTicket;
     if (ticket.type.value === TICKET_TYPE.DEFAULT) {
       if (user.balance < ticket.price * 2)
         return res.status(400).json({
@@ -220,6 +243,14 @@ const createBooking = async (req, res) => {
         });
       user.balance -= ticket.price;
       await user.save();
+    } else {
+      userTicket = await UserTicketModel.findOne({
+        userId: user._id,
+        ticketId: booking.ticketId,
+      });
+      if (!userTicket) {
+        return res.status(404).json({ error: "Bạn chưa mua vé này" });
+      }
     }
 
     const newBooking = await BookingModel.create({
@@ -236,6 +267,10 @@ const createBooking = async (req, res) => {
 
     await StationCyclingModel.deleteOne({ cyclingId: booking.cyclingId });
 
+    if (userTicket) {
+      userTicket.status = USER_TICKET_STATUS.ACTIVE;
+      await userTicket.save();
+    }
     res.json(newBooking);
   } catch (error) {
     console.error("Error creating booking:", error);
@@ -281,6 +316,7 @@ const createTripDetail = async (req, res) => {
         console.log("khong tinh tien, payment =", payment);
       }
       userTicket.usage = userTicket.usage + total;
+      userTicket.status = USER_TICKET_STATUS.READY;
       await userTicket.save();
     } else {
       // check xem total có lớn hơn timer không =? Tạo hóa đơn tính tiền => API transaction

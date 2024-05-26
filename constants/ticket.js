@@ -4,4 +4,10 @@ const TICKET_TYPE = {
   MONTHLY: 2,
 };
 
-module.exports = { TICKET_TYPE };
+const USER_TICKET_STATUS = {
+  READY: 0,
+  ACTIVE: 1,
+  KEEPING: 2,
+};
+
+module.exports = { TICKET_TYPE, USER_TICKET_STATUS };

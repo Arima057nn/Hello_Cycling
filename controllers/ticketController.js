@@ -169,6 +169,7 @@ const buyTicket = async (req, res) => {
       dateEnd: new Date(
         new Date().getTime() + 1000 * 60 * 60 * ticket.expiration
       ),
+      status: 0,
     });
     await TransactionModel.create({
       title: TRANSACTION_ACTION[1].title,
