@@ -1,4 +1,4 @@
-const { TICKET_TYPE } = require("../constants/ticket");
+const { TICKET_TYPE, USER_TICKET_STATUS } = require("../constants/ticket");
 const TicketModel = require("../models/ticketModel");
 const UserTicketModel = require("../models/userTicketModel ");
 const UserModel = require("../models/userModel");
@@ -194,6 +194,15 @@ const cancelTicket = async (req, res) => {
     const user = await UserModel.findOne({ uid: user_id });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+    const userTicket = await UserTicketModel.findById(bookingId);
+    if (!bookingId) {
+      return res.status(404).json({ error: "Không tìm thấy vé" });
+    }
+    if (userTicket.status !== USER_TICKET_STATUS.READY) {
+      return res
+        .status(400)
+        .json({ error: "Vé đang được sử dụng nên không thể hủy" });
     }
     await UserTicketModel.findByIdAndDelete(bookingId);
     res.json({ message: "Cancel ticket success" });
