@@ -49,6 +49,9 @@ const createKeepCycling = async (req, res) => {
       return res.status(400).json({ error: "Xe đang được sử dụng" });
     }
     const ticket = await TicketModel.findById(ticketId).populate("type");
+    if (!ticket) {
+      return res.status(404).json({ error: "Không tìm thấy vé" });
+    }
     if (
       ticket.type.value === TICKET_TYPE.DAY &&
       user.balance < ticket.price / 10
@@ -203,62 +206,27 @@ const createBooking = async (req, res) => {
     if (cycling.status !== CYCLING_STATUS.READY) {
       return res.status(400).json({ error: "Xe đang được sử dụng" });
     }
-    const userTickets = await UserTicketModel.find({
-      userId: user._id,
-    }).populate({ path: "ticketId", populate: { path: "categoryId" } });
-
-    const userTicketsFilter = userTickets.filter(
-      (userTicket) =>
-        userTicket.ticketId.categoryId._id.toHexString() ===
-        cycling.category.toHexString()
+    const ticket = await TicketModel.findById(booking.ticketId).populate(
+      "type"
     );
-    if (userTicketsFilter.length > 0) {
-      console.log("1. có vé");
-      if (userTicketsFilter[0].dateEnd > new Date()) {
-        console.log("2. vé còn hạn");
-        if (userTicketsFilter[0].usage < userTicketsFilter[0].ticketId.timer) {
-          console.log("3. vẫn còn thời gian để sử dụng, tạo booking ở đây");
-          const newBooking = await BookingModel.create({
-            userId: user._id,
-            cyclingId: booking.cyclingId,
-            startStation: booking.startStation,
-            status: BOOKING_STATUS.ACTIVE,
-            ticketId: userTicketsFilter[0].ticketId._id,
-          });
-          await CyclingModel.findByIdAndUpdate(booking.cyclingId, {
-            status: CYCLING_STATUS.ACTIVE,
-          });
-          await StationCyclingModel.deleteOne({ cyclingId: booking.cyclingId });
-          return res.json(newBooking);
-        } else {
-          console.log("3. đã dùng hết thời gian cho phép -> sử dụng vé lượt");
-        }
-      } else {
-        console.log("2. vé hết hạn -> sử dụng vé lượt");
-      }
-    } else {
-      console.log("1. không có vé -> sử dụng vé lượt");
+    if (!ticket) {
+      return res.status(404).json({ error: "Không tìm thấy vé" });
     }
-    const tickets = await TicketModel.find({
-      categoryId: cycling.category,
-    }).populate("type");
-    const ticket = tickets.filter(
-      (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
-    );
 
-    if (user.balance < ticket[0].price * 2) {
-      return res.status(400).json({
-        error: `Tài khoảng trên ${ticket[0].price * 2} mới có thể đặt xe`,
-      });
+    if (ticket.type.value === TICKET_TYPE.DEFAULT) {
+      if (user.balance < ticket.price * 2)
+        return res.status(400).json({
+          error: `Tài khoảng trên ${ticket.price * 2} mới có thể đặt xe`,
+        });
+      user.balance -= ticket.price;
+      await user.save();
     }
-    user.balance -= ticket[0].price;
-    await user.save();
 
     const newBooking = await BookingModel.create({
       userId: user._id,
       cyclingId: booking.cyclingId,
       startStation: booking.startStation,
-      ticketId: ticket[0]._id,
+      ticketId: booking.ticketId,
       status: BOOKING_STATUS.ACTIVE,
     });
 
@@ -465,11 +433,13 @@ const getTripHistory = async (req, res) => {
 const deleteBooking = async (req, res) => {
   try {
     const { bookingId } = req.query;
-    const trip = await BookingModel.findByIdAndDelete(bookingId);
-    if (!trip) {
-      return res.status(404).json({ error: "Trip not found" });
+    const result = await BookingModel.deleteMany({ _id: { $ne: bookingId } });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "No trips found to delete" });
     }
-    res.json({ message: "Delete booking successfully" });
+    res.json({
+      message: "Deleted all bookings except the specified one successfully",
+    });
   } catch (error) {
     console.error("Error find trip by id:", error);
     res.status(500).json({ error: "Failed to find trip by id" });
@@ -478,11 +448,16 @@ const deleteBooking = async (req, res) => {
 const deleteBookingDetail = async (req, res) => {
   try {
     const { bookingId } = req.query;
-    const trip = await BookingDetailModel.findByIdAndDelete(bookingId);
-    if (!trip) {
-      return res.status(404).json({ error: "Trip not found" });
+    const result = await BookingDetailModel.deleteMany({
+      _id: { $ne: bookingId },
+    });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "No trips found to delete" });
     }
-    res.json({ message: "Delete booking successfully" });
+    res.json({
+      message:
+        "Deleted all booking details  except the specified one successfully",
+    });
   } catch (error) {
     console.error("Error find trip by id:", error);
     res.status(500).json({ error: "Failed to find trip by id" });
