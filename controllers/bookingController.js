@@ -174,13 +174,21 @@ const createBooking = async (req, res) => {
     }
     const booking = req.body;
 
-    const existingUser = await BookingModel.findOne({
+    let existingUser = await BookingModel.findOne({
       userId: user._id,
       status: BOOKING_STATUS.ACTIVE,
     });
-    if (existingUser) {
-      return res.status(400).json({ error: "User already on the trips" });
-    }
+    if (!existingUser) {
+      existingUser = await BookingModel.findOne({
+        userId: user._id,
+        status: BOOKING_STATUS.KEEPING,
+      });
+      if (existingUser) {
+        return res
+          .status(404)
+          .json({ error: "User already on the keep trips" });
+      }
+    } else return res.status(404).json({ error: "User already on the trips" });
 
     const stationCycling = await StationCyclingModel.findOne({
       cyclingId: booking.cyclingId,
