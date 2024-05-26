@@ -87,6 +87,9 @@ const createKeepCycling = async (req, res) => {
       if (!userTicket) {
         return res.status(404).json({ error: "Bạn chưa mua vé này" });
       } else {
+        if (userTicket.status !== USER_TICKET_STATUS.READY) {
+          return res.status(400).json({ error: "Vé đã được sử dụng" });
+        }
         userTicket.status = USER_TICKET_STATUS.KEEPING;
         await userTicket.save();
       }
@@ -249,6 +252,10 @@ const createBooking = async (req, res) => {
       });
       if (!userTicket) {
         return res.status(404).json({ error: "Bạn chưa mua vé này" });
+      } else {
+        if (userTicket.status !== USER_TICKET_STATUS.READY) {
+          return res.status(400).json({ error: "Vé đã được sử dụng" });
+        }
       }
     }
 
