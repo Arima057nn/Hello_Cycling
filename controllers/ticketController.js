@@ -109,20 +109,22 @@ const selectTicketToUse = async (req, res) => {
         userTicket.ticketId.categoryId._id.toHexString() ===
         cycling.category.toHexString()
     );
-    if (userTicketsFilter.length > 0) {
-      if (userTicketsFilter[0].dateEnd > new Date()) {
-        if (userTicketsFilter[0].usage < userTicketsFilter[0].ticketId.timer) {
-          return res.json(userTicketsFilter[0].ticketId);
-        }
-      }
-    }
     const tickets = await TicketModel.find({
       categoryId: cycling.category,
     }).populate("type");
     const ticket = tickets.filter(
       (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
     );
-    res.json(ticket[0]);
+    if (userTicketsFilter.length > 0) {
+      if (userTicketsFilter[0].dateEnd > new Date()) {
+        if (userTicketsFilter[0].usage < userTicketsFilter[0].ticketId.timer) {
+          if (userTicketsFilter[0].status === USER_TICKET_STATUS.READY) {
+            return res.json([userTicketsFilter[0].ticketId, ticket[0]]);
+          }
+        }
+      }
+    }
+    res.json(ticket);
   } catch (error) {
     console.error("Error getting user tickets:", error);
     res.status(500).json({ error: "Failed to get user tickets" });
