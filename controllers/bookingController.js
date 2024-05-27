@@ -432,6 +432,24 @@ const findTrip = async (req, res) => {
   }
 };
 
+const findTrips = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const trips = await BookingModel.find({
+      userId: user._id,
+      status: { $ne: BOOKING_STATUS.CLOSED },
+    });
+    res.json(trips);
+  } catch (error) {
+    console.error("Error find trips:", error);
+    res.status(500).json({ error: "Failed to find trips" });
+  }
+};
+
 const findTripById = async (req, res) => {
   try {
     const { bookingId } = req.query;
@@ -500,6 +518,7 @@ module.exports = {
   deleteAllBooking,
   getTripDetail,
   findTrip,
+  findTrips,
   findTripById,
   createKeepCycling,
   startFromKeepCycling,
