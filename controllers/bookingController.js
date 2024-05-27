@@ -20,21 +20,21 @@ const createKeepCycling = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    let existingBooking = await BookingModel.findOne({
-      userId: user._id,
-      status: BOOKING_STATUS.ACTIVE,
-    });
-    if (!existingBooking) {
-      existingBooking = await BookingModel.findOne({
-        userId: user._id,
-        status: BOOKING_STATUS.KEEPING,
-      });
-      if (existingBooking) {
-        return res
-          .status(404)
-          .json({ error: "User already on the keep trips" });
-      }
-    } else return res.status(404).json({ error: "User already on the trips" });
+    // let existingBooking = await BookingModel.findOne({
+    //   userId: user._id,
+    //   status: BOOKING_STATUS.ACTIVE,
+    // });
+    // if (!existingBooking) {
+    //   existingBooking = await BookingModel.findOne({
+    //     userId: user._id,
+    //     status: BOOKING_STATUS.KEEPING,
+    //   });
+    //   if (existingBooking) {
+    //     return res
+    //       .status(404)
+    //       .json({ error: "User already on the keep trips" });
+    //   }
+    // } else return res.status(404).json({ error: "User already on the trips" });
 
     const stationCycling = await StationCyclingModel.findOne({
       cyclingId: cyclingId,
@@ -202,21 +202,21 @@ const createBooking = async (req, res) => {
     }
     const booking = req.body;
 
-    let existingUser = await BookingModel.findOne({
-      userId: user._id,
-      status: BOOKING_STATUS.ACTIVE,
-    });
-    if (!existingUser) {
-      existingUser = await BookingModel.findOne({
-        userId: user._id,
-        status: BOOKING_STATUS.KEEPING,
-      });
-      if (existingUser) {
-        return res
-          .status(404)
-          .json({ error: "User already on the keep trips" });
-      }
-    } else return res.status(404).json({ error: "User already on the trips" });
+    // let existingUser = await BookingModel.findOne({
+    //   userId: user._id,
+    //   status: BOOKING_STATUS.ACTIVE,
+    // });
+    // if (!existingUser) {
+    //   existingUser = await BookingModel.findOne({
+    //     userId: user._id,
+    //     status: BOOKING_STATUS.KEEPING,
+    //   });
+    //   if (existingUser) {
+    //     return res
+    //       .status(404)
+    //       .json({ error: "User already on the keep trips" });
+    //   }
+    // } else return res.status(404).json({ error: "User already on the trips" });
 
     const stationCycling = await StationCyclingModel.findOne({
       cyclingId: booking.cyclingId,
@@ -286,7 +286,7 @@ const createBooking = async (req, res) => {
 
 const createTripDetail = async (req, res) => {
   const { user_id } = req.user;
-  const { bookingId, status, endStation } = req.body;
+  const { bookingId, endStation } = req.body;
   let payment = 0;
   try {
     const user = await UserModel.findOne({ uid: user_id });
@@ -334,7 +334,7 @@ const createTripDetail = async (req, res) => {
       }
     }
 
-    booking.status = status;
+    booking.status = BOOKING_STATUS.CLOSED;
     await booking.save();
     const newBookingDetail = await BookingDetailModel.create({
       uid: user_id,
@@ -432,7 +432,7 @@ const findTrip = async (req, res) => {
   }
 };
 
-const findTrips = async (req, res) => {
+const findTripsCurrent = async (req, res) => {
   try {
     const { user_id } = req.user;
     const user = await UserModel.findOne({ uid: user_id });
@@ -442,7 +442,10 @@ const findTrips = async (req, res) => {
     const trips = await BookingModel.find({
       userId: user._id,
       status: { $ne: BOOKING_STATUS.CLOSED },
-    });
+    })
+      .populate({ path: "cyclingId", populate: { path: "category" } })
+      .populate("startStation")
+      .populate("ticketId");
     res.json(trips);
   } catch (error) {
     console.error("Error find trips:", error);
@@ -518,7 +521,7 @@ module.exports = {
   deleteAllBooking,
   getTripDetail,
   findTrip,
-  findTrips,
+  findTripsCurrent,
   findTripById,
   createKeepCycling,
   startFromKeepCycling,

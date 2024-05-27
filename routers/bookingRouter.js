@@ -12,7 +12,7 @@ const {
   cancalKeepCycling,
   deleteBooking,
   deleteBookingDetail,
-  findTrips,
+  findTripsCurrent,
 } = require("../controllers/bookingController");
 const { authenTokenUser } = require("../middleware/auth");
 
@@ -23,7 +23,7 @@ router.post("/tripDetail", authenTokenUser, createTripDetail);
 router.delete("/delete", deleteAllBooking);
 router.get("/tripDetail", getTripDetail);
 router.get("/findTrip", authenTokenUser, findTrip);
-router.get("/trips", authenTokenUser, findTrips);
+router.get("/trips", authenTokenUser, findTripsCurrent);
 router.get("/findTripById", authenTokenUser, findTripById);
 router.post("/createKeep", authenTokenUser, createKeepCycling);
 router.get("/history", authenTokenUser, getTripHistory);
