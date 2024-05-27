@@ -17,6 +17,24 @@ const getAllTransactions = async (req, res) => {
     res.status(500).json({ error: "Failed to get transactions" });
   }
 };
+
+const deleteAllTransactions = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    await TransactionModel.deleteMany({});
+    res.json({ message: "All transactions deleted" });
+  } catch (error) {
+    console.error("Error deleting transactions:", error);
+    res.status(500).json({ error: "Failed to delete transactions" });
+  }
+};
+
 module.exports = {
   getAllTransactions,
+  deleteAllTransactions,
 };
