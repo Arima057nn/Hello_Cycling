@@ -394,10 +394,20 @@ const deleteAllBookingDetail = async (req, res) => {
 const getTripDetail = async (req, res) => {
   try {
     const bookingId = req.query.bookingId;
-    const tripDetail = await BookingDetailModel.findOne({ bookingId });
+    const tripDetail = await BookingDetailModel.findById(bookingId)
+      .populate({
+        path: "bookingId",
+        populate: [
+          { path: "cyclingId", populate: { path: "category" } },
+          { path: "startStation" },
+          { path: "ticketId" },
+        ],
+      })
+      .populate("endStation");
     if (!tripDetail) {
       return res.status(404).json({ error: "Trip detail not found" });
     }
+    console.log("tripDetail", tripDetail);
     res.json(tripDetail);
   } catch (error) {
     console.error("Error get trip detail:", error);
