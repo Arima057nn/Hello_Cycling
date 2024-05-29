@@ -11,7 +11,7 @@ const USER_ROLE = {
 
 const USER_GENDER = {
   MALE: 0,
-  FAMALE: 1,
+  FEMALE: 1,
   OTHER: 2,
 };
 module.exports = { USER_STATUS, USER_ROLE, USER_GENDER };
