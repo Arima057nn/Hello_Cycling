@@ -149,9 +149,9 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
     let distancesAndDurations = response.data.rows[0].elements.map(
       (element, index) => ({
         station: stations[index],
-        distance: element.distance.text,
-        value: element.distance.value,
-        duration: element.duration.text,
+        distance: element?.distance?.text,
+        value: element?.distance?.value,
+        duration: element?.duration?.text,
         countOfCycling:
           cyclingCountMap.get(stations[index]._id.toString()) || 0,
       })
