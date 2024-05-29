@@ -17,7 +17,7 @@ const register = async (req, res, next) => {
       member: 0,
     });
     await newUser.save();
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({ message: "Đăng kí thành công" });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -34,7 +34,7 @@ const updateProfile = async (req, res, next) => {
     }
     user.name = name;
     await user.save();
-    res.status(200).json({ message: "Profile updated successfully" });
+    res.status(200).json({ message: "Cập nhật thông tin thành công" });
   } catch (error) {
     console.error("Error updating profile:", error);
     res.status(500).json({ error: "Internal Server Error" });

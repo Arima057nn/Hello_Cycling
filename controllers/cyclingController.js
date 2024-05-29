@@ -36,7 +36,7 @@ const findCycling = async (req, res, next) => {
       status: CYCLING_STATUS.READY,
     });
     if (!cycling) {
-      return res.status(404).json({ error: "Cycling not found" });
+      return res.status(404).json({ error: "Không tìm thấy xe này" });
     }
     res.json(cycling);
   } catch (error) {
@@ -50,7 +50,7 @@ const getCycling = async (req, res, next) => {
     const { code } = req.query;
     const cycling = await CyclingModel.findOne({ code });
     if (!cycling) {
-      return res.status(404).json({ error: "Cycling not found" });
+      return res.status(404).json({ error: "Không tìm thấy xe này" });
     }
     res.json(cycling);
   } catch (error) {
@@ -66,7 +66,7 @@ const sendCoordinate = async (req, res, next) => {
     console.log("cycling", cycling);
     console.log(code, coordinate);
     if (!cycling) {
-      return res.status(404).json({ error: "Cycling not found" });
+      return res.status(404).json({ error: "Không tìm thấy xe này" });
     }
     cycling.latitude = coordinate.latitude;
     cycling.longitude = coordinate.longitude;

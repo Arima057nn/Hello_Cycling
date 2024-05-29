@@ -139,7 +139,7 @@ const buyTicket = async (req, res) => {
       "type"
     );
     if (ticket && ticket.type.value === TICKET_TYPE.DEFAULT) {
-      return res.status(400).json({ error: "This ticket is defatult" });
+      return res.status(400).json({ error: "Vé mặc định không thể mua" });
     }
     const user = await UserModel.findOne({ uid: user_id });
     if (!user) {
@@ -156,7 +156,7 @@ const buyTicket = async (req, res) => {
     );
     if (userTicketsFilter.length > 0) {
       if (userTicketsFilter[0].dateEnd > new Date()) {
-        return res.status(400).json({ error: "User already on ticket" });
+        return res.status(400).json({ error: "Bạn đã mua vé cho loại xe này" });
       } else {
         await UserTicketModel.deleteOne({ _id: userTicketsFilter[0]._id });
       }
@@ -182,7 +182,7 @@ const buyTicket = async (req, res) => {
     });
     user.balance -= ticket.price;
     await user.save();
-    res.json({ userTicket, message: "Buy ticket success" });
+    res.json({ userTicket, message: "Mua vé thành công" });
   } catch (error) {
     console.error("Error buying ticket:", error);
     res.status(500).json({ error: "Failed to buy ticket" });
@@ -207,7 +207,7 @@ const cancelTicket = async (req, res) => {
         .json({ error: "Vé đang được sử dụng nên không thể hủy" });
     }
     await UserTicketModel.findByIdAndDelete(bookingId);
-    res.json({ message: "Cancel ticket success" });
+    res.json({ message: "Hủy vé thành công" });
   } catch (error) {
     console.error("Error cancel ticket:", error);
     res.status(500).json({ error: "Failed to cancel ticket" });

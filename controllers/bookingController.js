@@ -120,10 +120,10 @@ const startFromKeepCycling = async (req, res) => {
     const { bookingId } = req.body;
     const keepBooking = await BookingModel.findById(bookingId);
     if (!keepBooking) {
-      return res.status(404).json({ error: "User not on the keep trips" });
+      return res.status(404).json({ error: "Bạn đang không đặt giữ xe này" });
     }
     if (keepBooking.status !== BOOKING_STATUS.KEEPING) {
-      return res.status(400).json({ error: "User already on the trips" });
+      return res.status(400).json({ error: "Chuyến đi đã này bắt đầu" });
     }
     const newBooking = await BookingModel.create({
       userId: keepBooking.userId,
@@ -158,7 +158,7 @@ const cancalKeepCycling = async (req, res) => {
     }
     const keepBooking = await BookingModel.findById(bookingId);
     if (!keepBooking) {
-      return res.status(404).json({ error: "User not on the keep trips" });
+      return res.status(404).json({ error: "Bạn đang không đặt giữ xe này" });
     }
     await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
       status: CYCLING_STATUS.READY,
@@ -186,7 +186,7 @@ const cancalKeepCycling = async (req, res) => {
     user.balance -= ticket[0].price / 2;
     await user.save();
     res.json({
-      message: "Cancel keep cycling successfully",
+      message: `Hủy giữ xe thành công, phí giữ xe là ${ticket[0].price / 2}}`,
     });
   } catch (error) {
     console.error("Error cancel keep cycling:", error);
@@ -301,7 +301,7 @@ const createTripDetail = async (req, res) => {
     const date = new Date();
     const total = Math.floor((date - booking.createdAt) / 60000);
     if (!booking) {
-      return res.status(404).json({ error: "Booking not found" });
+      return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
     }
     const cycling = await CyclingModel.findById(booking.cyclingId);
     if (booking.ticketId.type.value !== TICKET_TYPE.DEFAULT) {
@@ -405,7 +405,7 @@ const getTripDetail = async (req, res) => {
       })
       .populate("endStation");
     if (!tripDetail) {
-      return res.status(404).json({ error: "Trip detail not found" });
+      return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
     }
     console.log("tripDetail", tripDetail);
     res.json(tripDetail);
@@ -432,7 +432,7 @@ const findTrip = async (req, res) => {
         status: BOOKING_STATUS.KEEPING,
       });
       if (!existingBooking) {
-        return res.status(404).json({ error: "Trip not found" });
+        return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
       }
     }
     res.json(existingBooking);
@@ -470,7 +470,7 @@ const findTripById = async (req, res) => {
       .populate({ path: "cyclingId", populate: { path: "category" } })
       .populate("startStation");
     if (!trip) {
-      return res.status(404).json({ error: "Trip not found" });
+      return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
     }
     res.json(trip);
   } catch (error) {
