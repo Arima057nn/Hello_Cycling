@@ -186,7 +186,7 @@ const cancalKeepCycling = async (req, res) => {
     user.balance -= ticket[0].price / 2;
     await user.save();
     res.json({
-      message: `Hủy giữ xe thành công, phí giữ xe là ${ticket[0].price / 2}}`,
+      message: `Hủy giữ xe thành công, phí giữ xe là ${ticket[0].price / 2}`,
     });
   } catch (error) {
     console.error("Error cancel keep cycling:", error);

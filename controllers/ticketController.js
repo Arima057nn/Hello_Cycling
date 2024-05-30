@@ -162,7 +162,7 @@ const buyTicket = async (req, res) => {
       }
     }
     if (user.balance < 0 || user.balance < ticket.price) {
-      return res.status(400).json({ error: "Not enough money" });
+      return res.status(400).json({ error: "Bạn không tủ điểm để mua vé này" });
     }
     const userTicket = await UserTicketModel.create({
       userId: user._id,

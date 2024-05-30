@@ -9,7 +9,9 @@ const getAllTransactions = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    const transactions = await TransactionModel.find({ userId: user._id });
+    const transactions = await TransactionModel.find({ userId: user._id }).sort(
+      { createdAt: -1 }
+    );
 
     res.json(transactions);
   } catch (error) {
