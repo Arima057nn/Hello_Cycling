@@ -4,4 +4,6 @@ const BOOKING_STATUS = {
   CLOSED: 2,
   CANCEL: 3,
 };
-module.exports = { BOOKING_STATUS };
+const FINISH_DISTANCE = 100;
+const CHANGE_DISTANCE = 100;
+module.exports = { BOOKING_STATUS, FINISH_DISTANCE, CHANGE_DISTANCE };

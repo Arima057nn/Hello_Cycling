@@ -5,8 +5,8 @@ const StationSchema = new mongoose.Schema(
     name: { type: String },
     code: { type: String },
     position: { type: String },
-    latitude: { type: String },
-    longitude: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
     imgae: {
       type: String,
       default:

@@ -1,4 +1,4 @@
-const { BOOKING_STATUS } = require("../constants/booking");
+const { BOOKING_STATUS, CHANGE_DISTANCE } = require("../constants/booking");
 const { CYCLING_STATUS } = require("../constants/cycling");
 const { TICKET_TYPE, USER_TICKET_STATUS } = require("../constants/ticket");
 const { TRANSACTION_ACTION } = require("../constants/transaction");
@@ -11,6 +11,8 @@ const TransactionModel = require("../models/transactionModel");
 const UserModel = require("../models/userModel");
 const UserTicketModel = require("../models/userTicketModel ");
 const { overduePriceToPay } = require("../utils/overduePrice");
+const { Client } = require("@googlemaps/google-maps-services-js");
+const client = new Client({});
 
 const createKeepCycling = async (req, res) => {
   try {
@@ -525,6 +527,102 @@ const deleteBookingDetail = async (req, res) => {
   }
 };
 
+const changeCycling = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const { bookingId, cyclingId } = req.body;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const booking = await BookingModel.findById(bookingId).populate({
+      path: "cyclingId",
+    });
+    if (!booking) {
+      return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
+    }
+    if (booking.cyclingId.status === CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang ở trạng thái sẵn sàng" });
+    }
+    const cycling = await CyclingModel.findById(cyclingId);
+
+    if (booking.cyclingId.category.toString() !== cycling.category.toString()) {
+      return res.status(400).json({ error: "Hai xe không cùng loại" });
+    }
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
+    const stationCycling = await StationCyclingModel.findOne({
+      cyclingId,
+    }).populate("stationId");
+    if (!stationCycling) {
+      return res.status(400).json({ error: "Không tìm thấy xe ở trạm" });
+    }
+    const CyclingToNewCyclingDistance = await client.distancematrix({
+      params: {
+        origins: [
+          { lat: booking.cyclingId.latitude, lng: booking.cyclingId.longitude },
+        ],
+        destinations: [{ lat: cycling.latitude, lng: cycling.longitude }],
+        key: process.env.GOOGLE_MAP_API_KEY,
+      },
+    });
+    if (
+      CyclingToNewCyclingDistance.data.rows[0].elements[0].distance.value >
+      CHANGE_DISTANCE
+    ) {
+      return res.status(400).json({
+        error: "Không thể thực hiển đổi xe vì khoảng cách 2 xe quá xa",
+      });
+    }
+
+    const CyclingToStationDistance = await client.distancematrix({
+      params: {
+        origins: [
+          { lat: booking.cyclingId.latitude, lng: booking.cyclingId.longitude },
+        ],
+        destinations: [
+          {
+            lat: stationCycling.stationId.latitude,
+            lng: stationCycling.stationId.longitude,
+          },
+        ],
+        key: process.env.GOOGLE_MAP_API_KEY,
+      },
+    });
+    if (
+      CyclingToStationDistance.data.rows[0].elements[0].distance.value >
+      CHANGE_DISTANCE
+    ) {
+      return res.status(400).json({
+        error: "Xe bạn muốn đổi hiện đang ở cách xa trạm này",
+      });
+    }
+    cycling.status = booking.cyclingId.status;
+    cycling.coordinate = booking.cyclingId.coordinate;
+    await cycling.save();
+    await CyclingModel.findByIdAndUpdate(booking.cyclingId._id, {
+      status: CYCLING_STATUS.READY,
+      coordinate: [],
+    });
+
+    await StationCyclingModel.deleteOne({ cyclingId: cycling._id });
+    await StationCyclingModel.create({
+      stationId: stationCycling.stationId._id,
+      cyclingId: booking.cyclingId._id,
+    });
+
+    await BookingModel.findByIdAndUpdate(bookingId, {
+      cyclingId: cyclingId,
+    });
+
+    res.json({ message: "Change cycling successfully" });
+  } catch (error) {
+    console.error("Error change cycling:", error);
+    res.status(500).json({ error: "Failed to change cycling" });
+  }
+};
+
 module.exports = {
   createBooking,
   createTripDetail,
@@ -539,4 +637,5 @@ module.exports = {
   getTripHistory,
   deleteBooking,
   deleteBookingDetail,
+  changeCycling,
 };

@@ -13,6 +13,7 @@ const {
   deleteBooking,
   deleteBookingDetail,
   findTripsCurrent,
+  changeCycling,
 } = require("../controllers/bookingController");
 const { authenTokenUser } = require("../middleware/auth");
 
@@ -31,5 +32,6 @@ router.post("/start", authenTokenUser, startFromKeepCycling);
 router.post("/cancel", authenTokenUser, cancalKeepCycling);
 router.get("/deleteOne", deleteBooking);
 router.get("/deleteDetailOne", deleteBookingDetail);
+router.post("/change", authenTokenUser, changeCycling);
 
 module.exports = router;
