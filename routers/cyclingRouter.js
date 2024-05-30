@@ -5,6 +5,7 @@ const {
   getCycling,
   sendCoordinate,
   updateAllCycling,
+  updateCoordinate,
 } = require("../controllers/cyclingController");
 const {
   createCyclingType,
@@ -20,5 +21,6 @@ router.post("/coord", sendCoordinate);
 router.post("/type", createCyclingType);
 router.get("/type", getAllTypes);
 router.post("/update", updateAllCycling);
+router.post("/updateCoordinate", updateCoordinate);
 
 module.exports = router;

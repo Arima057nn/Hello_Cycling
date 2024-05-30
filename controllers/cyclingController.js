@@ -1,5 +1,6 @@
 const { CYCLING_STATUS } = require("../constants/cycling");
 const CyclingModel = require("../models/cyclingModel");
+const StationCyclingModel = require("../models/stationCyclingModel");
 
 const createCycling = async (req, res, next) => {
   try {
@@ -63,8 +64,7 @@ const sendCoordinate = async (req, res, next) => {
   try {
     const { code, coordinate } = req.body;
     const cycling = await CyclingModel.findOne({ code });
-    console.log("cycling", cycling);
-    console.log(code, coordinate);
+    console.log("cycling", code);
     if (!cycling) {
       return res.status(404).json({ error: "Không tìm thấy xe này" });
     }
@@ -72,7 +72,6 @@ const sendCoordinate = async (req, res, next) => {
     cycling.longitude = coordinate.longitude;
     if (cycling.status === CYCLING_STATUS.ACTIVE) {
       cycling.coordinate.push(coordinate);
-      console.log("Coordinate:", coordinate);
     }
     await cycling.save();
     res.json(cycling);
@@ -97,10 +96,33 @@ const updateAllCycling = async (req, res, next) => {
   }
 };
 
+const updateCoordinate = async (req, res, next) => {
+  try {
+    const stations = await StationCyclingModel.find().populate("stationId");
+    for (const station of stations) {
+      // Cập nhật tọa độ của xe
+      await CyclingModel.findByIdAndUpdate(
+        station.cyclingId,
+        {
+          latitude: station.stationId.latitude,
+          longitude: station.stationId.longitude,
+        },
+        { new: true }
+      );
+    }
+    res.json({
+      message: "Coordinates updated for all cycles",
+    });
+  } catch (error) {
+    console.error("Error adding coordinate:", error);
+    res.status(500).json({ error: "Failed to add coordinate" });
+  }
+};
 module.exports = {
   createCycling,
   findCycling,
   getCycling,
   sendCoordinate,
   updateAllCycling,
+  updateCoordinate,
 };
