@@ -418,7 +418,6 @@ const getTripDetail = async (req, res) => {
     if (!tripDetail) {
       return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
     }
-    console.log("tripDetail", tripDetail);
     res.json(tripDetail);
   } catch (error) {
     console.error("Error get trip detail:", error);

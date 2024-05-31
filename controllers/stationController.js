@@ -144,7 +144,6 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
         key: process.env.GOOGLE_MAP_API_KEY,
       },
     });
-    console.log(response.data.rows[0].elements);
     // Xử lý kết quả trả về từ API Google Distance Matrix
     let distancesAndDurations = response.data.rows[0].elements.map(
       (element, index) => ({

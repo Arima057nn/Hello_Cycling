@@ -61,7 +61,6 @@ const GetCountOfAllCyclingAtStation = async (req, res, next) => {
 const getCyclingsAtStation = async (req, res, next) => {
   try {
     const { stationId } = req.query;
-    console.log(stationId);
     const cyclings = await StationCyclingModel.find({
       stationId: stationId,
     }).populate({ path: "cyclingId", populate: { path: "category" } });
