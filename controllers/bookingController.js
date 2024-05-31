@@ -59,9 +59,9 @@ const createKeepCycling = async (req, res) => {
       user.balance < ticket.price / 10
     ) {
       return res.status(400).json({
-        error: `Bạn đang sử dụng vé ngày, tài khoản phải trên ${
+        error: `Bạn đang sử dụng vé ngày, tài khoản trên ${
           ticket.price / 10
-        } mới có thể đặt giữ xe`,
+        } mới có thể đặt xe`,
       });
     } else if (
       ticket.type.value === TICKET_TYPE.MONTHLY &&
@@ -306,6 +306,15 @@ const createTripDetail = async (req, res) => {
       return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
     }
     const cycling = await CyclingModel.findById(booking.cyclingId);
+    const checkCycling = await StationCyclingModel.findOne({
+      cyclingId: booking.cyclingId,
+    });
+    if (checkCycling) {
+      return res.status(400).json({
+        error: "Xe bạn trả hiện đang ở trạm khác, vui lòng kiểm tra lại",
+      });
+    }
+
     if (booking.ticketId.type.value !== TICKET_TYPE.DEFAULT) {
       const userTicket = await UserTicketModel.findOne({
         userId: user._id,
@@ -545,7 +554,18 @@ const changeCycling = async (req, res) => {
       return res.status(400).json({ error: "Xe đang ở trạng thái sẵn sàng" });
     }
     const cycling = await CyclingModel.findById(cyclingId);
-
+    if (cycling._id.toString() === booking.cyclingId._id.toString()) {
+      return res.status(400).json({ error: "Hai xe này là một" });
+    }
+    const checkCycling = await StationCyclingModel.findOne({
+      cyclingId: booking.cyclingId._id,
+    });
+    if (checkCycling && booking.status !== BOOKING_STATUS.KEEPING) {
+      return res.status(400).json({
+        error:
+          "Xe bạn đang sử dụng hiện đang ở trạm nào đó, vui lòng kiểm tra lại",
+      });
+    }
     if (booking.cyclingId.category.toString() !== cycling.category.toString()) {
       return res.status(400).json({ error: "Hai xe không cùng loại" });
     }
@@ -606,11 +626,13 @@ const changeCycling = async (req, res) => {
       coordinate: [],
     });
 
-    await StationCyclingModel.deleteOne({ cyclingId: cycling._id });
-    await StationCyclingModel.create({
-      stationId: stationCycling.stationId._id,
-      cyclingId: booking.cyclingId._id,
-    });
+    if (booking.status === BOOKING_STATUS.ACTIVE) {
+      await StationCyclingModel.deleteOne({ cyclingId: cycling._id });
+      await StationCyclingModel.create({
+        stationId: stationCycling.stationId._id,
+        cyclingId: booking.cyclingId._id,
+      });
+    }
 
     await BookingModel.findByIdAndUpdate(bookingId, {
       cyclingId: cyclingId,
