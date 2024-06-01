@@ -127,6 +127,14 @@ const startFromKeepCycling = async (req, res) => {
     if (keepBooking.status !== BOOKING_STATUS.KEEPING) {
       return res.status(400).json({ error: "Chuyến đi đã này bắt đầu" });
     }
+    if (
+      keepBooking.createdAt.getTime() + 15 * 60 * 1000 <
+      new Date().getTime()
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Không thể bắt đầu vì thời gian giữ xe đã hết" });
+    }
     const newBooking = await BookingModel.create({
       userId: keepBooking.userId,
       cyclingId: keepBooking.cyclingId,
@@ -171,6 +179,14 @@ const cancalKeepCycling = async (req, res) => {
       { userId: user._id, ticketId: keepBooking.ticketId },
       { status: USER_TICKET_STATUS.READY }
     );
+    if (
+      keepBooking.createdAt.getTime() + 15 * 60 * 1000 >=
+      new Date().getTime()
+    ) {
+      return res.json({
+        message: `Hủy giữ xe thành công, phí giữ xe là 0 đồng`,
+      });
+    }
     const tickets = await TicketModel.find({ categoryId: category }).populate(
       "type"
     );
@@ -548,6 +564,14 @@ const changeCycling = async (req, res) => {
     });
     if (!booking) {
       return res.status(404).json({ error: "Không tìm thấy chuyến đi" });
+    }
+    if (
+      booking.status === BOOKING_STATUS.KEEPING &&
+      booking.createdAt.getTime() + 15 * 60 * 1000 < new Date().getTime()
+    ) {
+      return res.status(400).json({
+        error: "Không thể thực hiện đổi xe vì thời gian giữ xe đã hết",
+      });
     }
     if (booking.cyclingId.status === CYCLING_STATUS.READY) {
       return res.status(400).json({ error: "Xe đang ở trạng thái sẵn sàng" });
