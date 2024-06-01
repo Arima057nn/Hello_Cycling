@@ -3,7 +3,7 @@ const UserModel = require("../models/userModel");
 
 const register = async (req, res, next) => {
   try {
-    const { user_id, phone_number } = req.user;
+    const { user_id, phone_number } = req.body;
     const existingUser = await UserModel.findOne({ uid: user_id });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
@@ -15,6 +15,7 @@ const register = async (req, res, next) => {
       role: USER_ROLE.USER,
       point: 0,
       member: 0,
+      balance: 0,
     });
     await newUser.save();
     res.status(201).json({ message: "Đăng kí thành công" });
