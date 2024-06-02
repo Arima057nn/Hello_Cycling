@@ -1,4 +1,8 @@
-const { BOOKING_STATUS, CHANGE_DISTANCE } = require("../constants/booking");
+const {
+  BOOKING_STATUS,
+  CHANGE_DISTANCE,
+  REMAINING_MINUTE_TICKET,
+} = require("../constants/booking");
 const { CYCLING_STATUS } = require("../constants/cycling");
 const { TICKET_TYPE, USER_TICKET_STATUS } = require("../constants/ticket");
 const { TRANSACTION_ACTION } = require("../constants/transaction");
@@ -68,7 +72,7 @@ const createKeepCycling = async (req, res) => {
       user.balance < ticket.price / 24
     ) {
       return res.status(400).json({
-        error: `Bạn đang sử dụng vé tháng, tài khoản phải trên ${
+        error: `Bạn đang sử dụng vé tháng, tài khoản trên ${
           ticket.price / 24
         } mới có thể đặt giữ xe`,
       });
@@ -77,7 +81,7 @@ const createKeepCycling = async (req, res) => {
     if (ticket.type.value === TICKET_TYPE.DEFAULT) {
       if (user.balance < ticket.price * 2)
         return res.status(400).json({
-          error: `Bạn đang sử dụng vé lượt, tài khoản phải trên ${
+          error: `Bạn đang sử dụng vé lượt, tài khoản trên ${
             ticket.price * 2
           } mới có thể đặt giữ xe`,
         });
@@ -267,12 +271,35 @@ const createBooking = async (req, res) => {
       userTicket = await UserTicketModel.findOne({
         userId: user._id,
         ticketId: booking.ticketId,
-      });
+      }).populate({ path: "ticketId", populate: { path: "type" } });
       if (!userTicket) {
         return res.status(404).json({ error: "Bạn chưa mua vé này" });
       } else {
         if (userTicket.status !== USER_TICKET_STATUS.READY) {
           return res.status(400).json({ error: "Vé đã được sử dụng" });
+        }
+        if (
+          userTicket.ticketId.timer - userTicket.usage <=
+          REMAINING_MINUTE_TICKET
+        ) {
+          if (
+            (userTicket.ticketId.type.value === TICKET_TYPE.DAY &&
+              user.balance < userTicket.ticketId.price / 5) ||
+            (userTicket.ticketId.type.value === TICKET_TYPE.MONTHLY &&
+              user.balance < userTicket.ticketId.price / 12)
+          ) {
+            {
+              return res.status(400).json({
+                error: `Thời lượng sử dụng còn lại của ${
+                  userTicket.ticketId.name
+                } dưới ${REMAINING_MINUTE_TICKET} phút thì TK phải trên ${
+                  userTicket.ticketId.type.value === TICKET_TYPE.DAY
+                    ? userTicket.ticketId.price / 5
+                    : userTicket.ticketId.price / 12
+                } điểm mới có thể đặt xe`,
+              });
+            }
+          }
         }
       }
     }
