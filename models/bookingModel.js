@@ -23,6 +23,7 @@ const BookingSchema = new mongoose.Schema(
       require: true,
     },
     status: { type: Number },
+    payment: { type: Number },
   },
   {
     timestamps: true,

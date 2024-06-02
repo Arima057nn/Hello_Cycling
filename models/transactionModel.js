@@ -15,7 +15,7 @@ const TransactionSchema = new mongoose.Schema(
     type: { type: Number, required: true },
     payment: { type: Number, required: true },
     status: { type: Number },
-    orderId: { type: String, required: true },
+    orderId: { type: String },
   },
   {
     timestamps: true,

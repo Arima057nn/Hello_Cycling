@@ -2,6 +2,7 @@ const {
   BOOKING_STATUS,
   CHANGE_DISTANCE,
   REMAINING_MINUTE_TICKET,
+  CANCEL_FREE_BOOKING,
 } = require("../constants/booking");
 const { CYCLING_STATUS } = require("../constants/cycling");
 const { TICKET_TYPE, USER_TICKET_STATUS } = require("../constants/ticket");
@@ -23,6 +24,7 @@ const createKeepCycling = async (req, res) => {
     const { cyclingId, startStation, ticketId } = req.body;
     const { user_id } = req.user;
     const user = await UserModel.findOne({ uid: user_id });
+    let paymentCycling = 0;
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -58,33 +60,33 @@ const createKeepCycling = async (req, res) => {
     if (!ticket) {
       return res.status(404).json({ error: "Không tìm thấy vé" });
     }
-    if (
-      ticket.type.value === TICKET_TYPE.DAY &&
-      user.balance < ticket.price / 10
-    ) {
-      return res.status(400).json({
-        error: `Bạn đang sử dụng vé ngày, tài khoản trên ${
-          ticket.price / 10
-        } mới có thể đặt xe`,
-      });
-    } else if (
-      ticket.type.value === TICKET_TYPE.MONTHLY &&
-      user.balance < ticket.price / 24
-    ) {
-      return res.status(400).json({
-        error: `Bạn đang sử dụng vé tháng, tài khoản trên ${
-          ticket.price / 24
-        } mới có thể đặt giữ xe`,
-      });
+    if (ticket.type.value === TICKET_TYPE.DAY) {
+      if (user.balance < ticket.price / 5) {
+        return res.status(400).json({
+          error: `Bạn đang sử dụng vé ngày, tài khoản trên ${
+            ticket.price / 5
+          } mới có thể đặt xe`,
+        });
+      } else paymentCycling = ticket.price / 5;
+    }
+    if (ticket.type.value === TICKET_TYPE.MONTHLY) {
+      if (user.balance < ticket.price / 12) {
+        return res.status(400).json({
+          error: `Bạn đang sử dụng vé tháng, tài khoản trên ${
+            ticket.price / 12
+          } mới có thể đặt giữ xe`,
+        });
+      } else paymentCycling = ticket.price / 12;
     }
     let userTicket;
     if (ticket.type.value === TICKET_TYPE.DEFAULT) {
-      if (user.balance < ticket.price * 2)
+      if (user.balance < ticket.price * 2) {
         return res.status(400).json({
           error: `Bạn đang sử dụng vé lượt, tài khoản trên ${
             ticket.price * 2
           } mới có thể đặt giữ xe`,
         });
+      } else paymentCycling = ticket.price * 2;
     } else {
       userTicket = await UserTicketModel.findOne({
         userId: user._id,
@@ -100,12 +102,15 @@ const createKeepCycling = async (req, res) => {
         await userTicket.save();
       }
     }
+    user.balance -= paymentCycling;
+    await user.save();
     const newKeepBooking = await BookingModel.create({
       userId: user._id,
       cyclingId: cyclingId,
       startStation: startStation,
       status: BOOKING_STATUS.KEEPING,
       ticketId: ticketId,
+      payment: paymentCycling,
     });
     cycling.status = CYCLING_STATUS.KEEPING;
     await cycling.save();
@@ -145,6 +150,7 @@ const startFromKeepCycling = async (req, res) => {
       startStation: keepBooking.startStation,
       status: BOOKING_STATUS.ACTIVE,
       ticketId: keepBooking.ticketId,
+      payment: keepBooking.payment,
     });
     await UserTicketModel.findOneAndUpdate(
       { userId: user._id, ticketId: keepBooking.ticketId },
@@ -184,9 +190,11 @@ const cancalKeepCycling = async (req, res) => {
       { status: USER_TICKET_STATUS.READY }
     );
     if (
-      keepBooking.createdAt.getTime() + 15 * 60 * 1000 >=
+      keepBooking.createdAt.getTime() + CANCEL_FREE_BOOKING * 60 * 1000 >=
       new Date().getTime()
     ) {
+      user.balance += keepBooking.payment;
+      await user.save();
       return res.json({
         message: `Hủy giữ xe thành công, phí giữ xe là 0 đồng`,
       });
@@ -205,7 +213,7 @@ const cancalKeepCycling = async (req, res) => {
       payment: ticket[0].price / 2,
       status: 1,
     });
-    user.balance -= ticket[0].price / 2;
+    user.balance = user.balance - ticket[0].price / 2 + keepBooking.payment;
     await user.save();
     res.json({
       message: `Hủy giữ xe thành công, phí giữ xe là ${ticket[0].price / 2}`,
@@ -223,7 +231,7 @@ const createBooking = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
     const booking = req.body;
-
+    let paymentCycling = 0;
     // let existingUser = await BookingModel.findOne({
     //   userId: user._id,
     //   status: BOOKING_STATUS.ACTIVE,
@@ -265,8 +273,7 @@ const createBooking = async (req, res) => {
         return res.status(400).json({
           error: `Tài khoảng trên ${ticket.price * 2} mới có thể đặt xe`,
         });
-      user.balance -= ticket.price;
-      await user.save();
+      paymentCycling = ticket.price * 2;
     } else {
       userTicket = await UserTicketModel.findOne({
         userId: user._id,
@@ -299,17 +306,26 @@ const createBooking = async (req, res) => {
                 } điểm mới có thể đặt xe`,
               });
             }
+          } else {
+            if (userTicket.ticketId.type.value === TICKET_TYPE.DAY) {
+              paymentCycling = userTicket.ticketId.price / 5;
+            }
+            if (userTicket.ticketId.type.value === TICKET_TYPE.MONTHLY) {
+              paymentCycling = userTicket.ticketId.price / 12;
+            }
           }
         }
       }
     }
-
+    user.balance -= paymentCycling;
+    await user.save();
     const newBooking = await BookingModel.create({
       userId: user._id,
       cyclingId: booking.cyclingId,
       startStation: booking.startStation,
       ticketId: booking.ticketId,
       status: BOOKING_STATUS.ACTIVE,
+      payment: paymentCycling,
     });
 
     await CyclingModel.findByIdAndUpdate(booking.cyclingId, {
@@ -369,26 +385,26 @@ const createTripDetail = async (req, res) => {
           booking.ticketId.overduePrice,
           booking.ticketId.duration
         );
-        user.balance -= payment;
       }
       userTicket.usage = userTicket.usage + total;
       userTicket.status = USER_TICKET_STATUS.READY;
       await userTicket.save();
     } else {
       if (total > booking.ticketId.timer) {
-        payment = overduePriceToPay(
-          total - booking.ticketId.timer,
-          booking.ticketId.overduePrice,
-          booking.ticketId.duration
-        );
-        user.balance -= payment;
-        payment += booking.ticketId.price;
+        payment =
+          overduePriceToPay(
+            total - booking.ticketId.timer,
+            booking.ticketId.overduePrice,
+            booking.ticketId.duration
+          ) + booking.ticketId.price;
       } else {
         payment = booking.ticketId.price;
       }
     }
 
     booking.status = BOOKING_STATUS.CLOSED;
+    user.balance = user.balance - payment + booking.payment;
+    console.log("payment", user.balance, payment, booking.payment);
     await booking.save();
     const newBookingDetail = await BookingDetailModel.create({
       uid: user_id,
