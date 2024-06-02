@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const UserModel = require("../models/userModel");
 const TransactionModel = require("../models/transactionModel");
 const { TRANSACTION_ACTION } = require("../constants/transaction");
+const { bonusAmount } = require("../utils/bonusAmount");
 
 const Momo = async (req, res) => {
   try {
@@ -140,17 +141,18 @@ const TransactionStatus = async (req, res) => {
     if (result.data.resultCode === 0) {
       const transaction = await TransactionModel.findOne({
         userId: user._id,
-        payment: orderId,
+        orderId: orderId,
       });
       if (!transaction)
         await TransactionModel.create({
           title: TRANSACTION_ACTION[2].title,
           userId: user._id,
           type: TRANSACTION_ACTION[2].type,
-          payment: result.data.amount,
+          payment: bonusAmount(result.data.amount),
           status: 1,
+          orderId: orderId,
         });
-      user.balance += result.data.amount;
+      user.balance += bonusAmount(result.data.amount);
       await user.save();
     }
     return res.status(200).json(result.data);

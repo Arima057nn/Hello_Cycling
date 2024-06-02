@@ -28,4 +28,27 @@ const TRANSACTION_ACTION = [
   }),
 ];
 
-module.exports = { TRANSACTION_TYPE, TRANSACTION_STATUS, TRANSACTION_ACTION };
+const TRANSACTION_BONUS = [
+  {
+    bonus: 5,
+    from: 100000,
+    to: 500000,
+  },
+  {
+    bonus: 10,
+    from: 500000,
+    to: 1000000,
+  },
+  {
+    bonus: 15,
+    from: 1000000,
+    to: 5000000,
+  },
+];
+
+module.exports = {
+  TRANSACTION_TYPE,
+  TRANSACTION_STATUS,
+  TRANSACTION_ACTION,
+  TRANSACTION_BONUS,
+};
