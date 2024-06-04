@@ -550,9 +550,9 @@ const findTripById = async (req, res) => {
 const getTripHistory = async (req, res) => {
   try {
     const { user_id } = req.user;
-    const history = await BookingDetailModel.find({ uid: user_id }).populate(
-      "bookingId"
-    );
+    const history = await BookingDetailModel.find({ uid: user_id })
+      .populate("bookingId")
+      .sort({ createdAt: -1 });
     res.json(history);
   } catch (error) {
     console.error("Error get trip history:", error);
