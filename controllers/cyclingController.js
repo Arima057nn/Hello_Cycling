@@ -2,6 +2,17 @@ const { CYCLING_STATUS } = require("../constants/cycling");
 const CyclingModel = require("../models/cyclingModel");
 const StationCyclingModel = require("../models/stationCyclingModel");
 
+const getAllCycling = async (req, res, next) => {
+  try {
+    const cyclings = await CyclingModel.find().populate("category");
+    res.json(cyclings);
+  } catch (error) {
+    console.error("Error getting all cycling:", error);
+
+    res.status(500).json({ error: "Failed to get all cycling" });
+  }
+};
+
 const createCycling = async (req, res, next) => {
   try {
     const cycling = req.body;
@@ -119,6 +130,7 @@ const updateCoordinate = async (req, res, next) => {
   }
 };
 module.exports = {
+  getAllCycling,
   createCycling,
   findCycling,
   getCycling,

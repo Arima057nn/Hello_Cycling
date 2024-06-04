@@ -6,6 +6,7 @@ const {
   sendCoordinate,
   updateAllCycling,
   updateCoordinate,
+  getAllCycling,
 } = require("../controllers/cyclingController");
 const {
   createCyclingType,
@@ -13,7 +14,7 @@ const {
 } = require("../controllers/cyclingTypeController");
 
 const router = express.Router();
-
+/// User
 router.post("/create", createCycling);
 router.get("/find", findCycling);
 router.get("/get", getCycling);
@@ -22,5 +23,7 @@ router.post("/type", createCyclingType);
 router.get("/type", getAllTypes);
 router.post("/update", updateAllCycling);
 router.post("/updateCoordinate", updateCoordinate);
+/// Admin
+router.get("/", getAllCycling);
 
 module.exports = router;

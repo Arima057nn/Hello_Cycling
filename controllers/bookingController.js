@@ -711,6 +711,25 @@ const changeCycling = async (req, res) => {
   }
 };
 
+const getAllTripDetail = async (req, res) => {
+  try {
+    const tripDetails = await BookingDetailModel.find({})
+      .populate({
+        path: "bookingId",
+        populate: [
+          { path: "cyclingId", populate: { path: "category" } },
+          { path: "startStation" },
+          { path: "ticketId" },
+        ],
+      })
+      .populate("endStation");
+    res.json(tripDetails);
+  } catch (error) {
+    console.error("Error get all trip detail:", error);
+    res.status(500).json({ error: "Failed to get all trip detail" });
+  }
+};
+
 module.exports = {
   createBooking,
   createTripDetail,
@@ -726,4 +745,5 @@ module.exports = {
   deleteBooking,
   deleteBookingDetail,
   changeCycling,
+  getAllTripDetail,
 };
