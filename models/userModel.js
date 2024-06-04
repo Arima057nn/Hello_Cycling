@@ -10,7 +10,7 @@ const UserSchema = new mongoose.Schema(
     dateOfBirth: { type: Date },
     status: { type: Number },
     role: { type: Number },
-    phone: { type: String, unique: true, required: true },
+    phone: { type: String, unique: true, required: true, default: "Admin" },
     point: { type: Number },
     member: { type: Number },
     balance: { type: Number },

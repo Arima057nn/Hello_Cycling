@@ -12,6 +12,7 @@ const {
   createCyclingType,
   getAllTypes,
 } = require("../controllers/cyclingTypeController");
+const { authenTokenAdmin } = require("../middleware/auth");
 
 const router = express.Router();
 /// User
@@ -24,6 +25,6 @@ router.get("/type", getAllTypes);
 router.post("/update", updateAllCycling);
 router.post("/updateCoordinate", updateCoordinate);
 /// Admin
-router.get("/", getAllCycling);
+router.get("/", authenTokenAdmin, getAllCycling);
 
 module.exports = router;

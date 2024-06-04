@@ -16,7 +16,7 @@ const {
   changeCycling,
   getAllTripDetail,
 } = require("../controllers/bookingController");
-const { authenTokenUser } = require("../middleware/auth");
+const { authenTokenUser, authenTokenAdmin } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -36,6 +36,6 @@ router.get("/deleteDetailOne", deleteBookingDetail);
 router.post("/change", authenTokenUser, changeCycling);
 
 /// Admin
-router.get("/", getAllTripDetail);
+router.get("/", authenTokenAdmin, getAllTripDetail);
 
 module.exports = router;

@@ -16,11 +16,9 @@ const authenTokenUser = async (req, res, next) => {
     })
     .catch((error) => {
       console.error("Error verifying token:", error.code);
-      return res
-        .status(403)
-        .send({
-          error: `Hiện tại đã quá phiên truy cập, vui lòng truy cập lại app !`,
-        });
+      return res.status(403).send({
+        error: `Hiện tại đã quá phiên truy cập, vui lòng truy cập lại app !`,
+      });
     });
 };
 
@@ -36,8 +34,8 @@ const authenTokenAdmin = (req, res, next) => {
     .then((decodedToken) => {
       const uid = decodedToken.uid;
       req.user = decodedToken;
-      if (decodedToken.role && decodedToken.role === USER_ROLE.ADMIN) next();
-      return res.status(403).send("Access denied. No role provided.");
+      if (decodedToken.email === "admin1@gmail.com") next();
+      else return res.status(403).send("Access denied. No role provided.");
     })
     .catch((error) => {
       console.error("Error verifying token:", error.code);
