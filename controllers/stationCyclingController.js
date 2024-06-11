@@ -1,3 +1,5 @@
+const { CYCLING_STATUS } = require("../constants/cycling");
+const CyclingModel = require("../models/cyclingModel");
 const StationCyclingModel = require("../models/stationCyclingModel");
 const StationModel = require("../models/stationModel");
 
@@ -85,9 +87,36 @@ const findCyclingAtStation = async (req, res, next) => {
     res.status(500).json({ error: "Failed to get cycling at station" });
   }
 };
+
+const getCyclingsNotAtStation = async (req, res, next) => {
+  try {
+    const cyclingStations = await StationCyclingModel.find();
+
+    const cyclingStationIds = cyclingStations.map((station) =>
+      station.cyclingId.toString()
+    );
+
+    const cyclings = await CyclingModel.find({ status: CYCLING_STATUS.READY });
+
+    const cyclingsNotAtStation = cyclings.filter((cycling) => {
+      return cyclingStationIds.every(
+        (stationId) => stationId !== cycling._id.toString()
+      );
+    });
+
+    res.json({ cyclingsNotAtStation, length: cyclingsNotAtStation.length });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách xe đạp không ở trạm:", error);
+    res
+      .status(500)
+      .json({ error: "Không thể lấy danh sách xe đạp không ở trạm" });
+  }
+};
+
 module.exports = {
   createCyclingAtStation,
   GetCountOfAllCyclingAtStation,
   getCyclingsAtStation,
   findCyclingAtStation,
+  getCyclingsNotAtStation,
 };

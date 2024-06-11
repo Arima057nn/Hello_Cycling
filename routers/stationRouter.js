@@ -11,11 +11,13 @@ const {
   GetCountOfAllCyclingAtStation,
   getCyclingsAtStation,
   findCyclingAtStation,
+  getCyclingsNotAtStation,
 } = require("../controllers/stationCyclingController");
+const { authenTokenAdmin } = require("../middleware/auth");
 
 const router = express.Router();
 
-router.post("/create", createStation);
+router.post("/create", authenTokenAdmin, createStation);
 router.post("/createCycling", createCyclingAtStation);
 router.get("/", getAllStation);
 router.get("/count", GetCountOfAllCyclingAtStation);
@@ -24,5 +26,8 @@ router.post("/calculate", calculateDistance);
 router.post("/calculateAll", calculateDistanceToAllStations);
 router.post("/cycling", getDistanceAndCountOfCyclingAtStations);
 router.get("/find", findCyclingAtStation);
+
+// Admmin
+router.get("/cyclingReady", getCyclingsNotAtStation);
 
 module.exports = router;

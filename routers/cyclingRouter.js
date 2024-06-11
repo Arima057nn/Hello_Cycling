@@ -16,7 +16,7 @@ const { authenTokenAdmin } = require("../middleware/auth");
 
 const router = express.Router();
 /// User
-router.post("/create", createCycling);
+router.post("/create", authenTokenAdmin, createCycling);
 router.get("/find", findCycling);
 router.get("/get", getCycling);
 router.post("/coord", sendCoordinate);
