@@ -91,12 +91,23 @@ const createKeepCycling = async (req, res) => {
       userTicket = await UserTicketModel.findOne({
         userId: user._id,
         ticketId: ticketId,
-      });
+      }).populate({ path: "ticketId", populate: { path: "type" } });
       if (!userTicket) {
         return res.status(404).json({ error: "Bạn chưa mua vé này" });
       } else {
         if (userTicket.status !== USER_TICKET_STATUS.READY) {
           return res.status(400).json({ error: "Vé đã được sử dụng" });
+        }
+        if (userTicket.dateEnd < new Date()) {
+          return res
+            .status(400)
+            .json({ error: "Vé đã hết hạn sử dụng. Vui lòng mua vé mới" });
+        }
+        if (userTicket.ticketId.timer < userTicket.usage) {
+          return res.status(400).json({
+            error:
+              "Vé đã dùng hết thời lượng có thể sử dụng. Vui lòng mua vé mới",
+          });
         }
         userTicket.status = USER_TICKET_STATUS.KEEPING;
         await userTicket.save();
@@ -189,23 +200,13 @@ const cancalKeepCycling = async (req, res) => {
       { userId: user._id, ticketId: keepBooking.ticketId },
       { status: USER_TICKET_STATUS.READY }
     );
-    if (
-      keepBooking.createdAt.getTime() + CANCEL_FREE_BOOKING * 60 * 1000 >=
-      new Date().getTime()
-    ) {
-      user.balance += keepBooking.payment;
-      await user.save();
-      return res.json({
-        message: `Hủy giữ xe thành công, phí giữ xe là 0 đồng`,
-      });
-    }
+
     const tickets = await TicketModel.find({ categoryId: category }).populate(
       "type"
     );
     const ticket = tickets.filter(
       (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
     );
-
     await TransactionModel.create({
       title: TRANSACTION_ACTION[3].title,
       userId: user._id,
@@ -284,6 +285,17 @@ const createBooking = async (req, res) => {
       } else {
         if (userTicket.status !== USER_TICKET_STATUS.READY) {
           return res.status(400).json({ error: "Vé đã được sử dụng" });
+        }
+        if (userTicket.dateEnd < new Date()) {
+          return res
+            .status(400)
+            .json({ error: "Vé đã hết hạn sử dụng. Vui lòng mua vé mới" });
+        }
+        if (userTicket.ticketId.timer < userTicket.usage) {
+          return res.status(400).json({
+            error:
+              "Vé đã dùng hết thời lượng có thể sử dụng. Vui lòng mua vé mới",
+          });
         }
         if (
           userTicket.ticketId.timer - userTicket.usage <=
