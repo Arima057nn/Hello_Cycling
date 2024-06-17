@@ -2,7 +2,7 @@ const {
   BOOKING_STATUS,
   CHANGE_DISTANCE,
   REMAINING_MINUTE_TICKET,
-  CANCEL_FREE_BOOKING,
+  KEEPING_TIME,
 } = require("../constants/booking");
 const { CYCLING_STATUS } = require("../constants/cycling");
 const { TICKET_TYPE, USER_TICKET_STATUS } = require("../constants/ticket");
@@ -148,7 +148,7 @@ const startFromKeepCycling = async (req, res) => {
       return res.status(400).json({ error: "Chuyến đi đã này bắt đầu" });
     }
     if (
-      keepBooking.createdAt.getTime() + 15 * 60 * 1000 <
+      keepBooking.createdAt.getTime() + KEEPING_TIME * 60 * 1000 <
       new Date().getTime()
     ) {
       return res
@@ -742,6 +742,52 @@ const getAllTripDetail = async (req, res) => {
   }
 };
 
+const GetAllKeepBooking = async (req, res) => {
+  try {
+    const keepBookings = await BookingModel.find({
+      status: BOOKING_STATUS.KEEPING,
+    }).populate("ticketId");
+    console.log("length", keepBookings.length);
+    for (const keepBooking of keepBookings) {
+      console.log("11");
+      if (
+        keepBooking.createdAt.getTime() + KEEPING_TIME * 60 * 1000 <
+        new Date().getTime()
+      ) {
+        const user = await UserModel.findById(keepBooking.userId);
+        await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
+          status: CYCLING_STATUS.READY,
+        });
+        await BookingModel.findByIdAndDelete(keepBooking._id);
+
+        await UserTicketModel.findOneAndUpdate(
+          { userId: user._id, ticketId: keepBooking.ticketId },
+          { status: USER_TICKET_STATUS.READY }
+        );
+
+        const tickets = await TicketModel.find({
+          categoryId: keepBooking.ticketId.categoryId,
+        }).populate("type");
+        const ticket = tickets.filter(
+          (ticket) => ticket.type.value === TICKET_TYPE.DEFAULT
+        );
+        await TransactionModel.create({
+          title: TRANSACTION_ACTION[3].title,
+          userId: user._id,
+          type: TRANSACTION_ACTION[3].type,
+          payment: ticket[0].price / 2,
+          status: 1,
+        });
+        user.balance = user.balance - ticket[0].price / 2 + keepBooking.payment;
+        await user.save();
+      }
+    }
+  } catch (error) {
+    console.error("Error get all keep booking:", error);
+    res.status(500).json({ error: "Failed to get all keep booking" });
+  }
+};
+
 module.exports = {
   createBooking,
   createTripDetail,
@@ -758,4 +804,5 @@ module.exports = {
   deleteBookingDetail,
   changeCycling,
   getAllTripDetail,
+  GetAllKeepBooking,
 };

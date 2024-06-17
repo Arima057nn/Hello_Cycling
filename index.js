@@ -13,8 +13,10 @@ const ticketRouter = require("./routers/ticketRouter");
 const promotionRouter = require("./routers/promotionRouter");
 const transactionRouter = require("./routers/transactionRouter");
 const paymentRouter = require("./routers/paymentRouter");
+var cron = require("node-cron");
 
 const serviceAccount = require("./serviceAccountKey.json");
+const { GetAllKeepBooking } = require("./controllers/bookingController");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -43,6 +45,17 @@ app.use("/api/ticket", ticketRouter);
 app.use("/api/promotion", promotionRouter);
 app.use("/api/transaction", transactionRouter);
 app.use("/api/payment", paymentRouter);
+
+app.get("/api/booking/auto", (req, res) => {
+  GetAllKeepBooking(req, res);
+});
+cron.schedule("* * * * *", () => {
+  try {
+    GetAllKeepBooking();
+  } catch (error) {
+    console.error("Lỗi khi xử lý auto booking trong cron job:", error);
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
