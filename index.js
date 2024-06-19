@@ -13,6 +13,7 @@ const ticketRouter = require("./routers/ticketRouter");
 const promotionRouter = require("./routers/promotionRouter");
 const transactionRouter = require("./routers/transactionRouter");
 const paymentRouter = require("./routers/paymentRouter");
+const reportRouter = require("./routers/reportRouter");
 var cron = require("node-cron");
 
 const serviceAccount = require("./serviceAccountKey.json");
@@ -45,6 +46,7 @@ app.use("/api/ticket", ticketRouter);
 app.use("/api/promotion", promotionRouter);
 app.use("/api/transaction", transactionRouter);
 app.use("/api/payment", paymentRouter);
+app.use("/api/report", reportRouter);
 
 app.get("/api/booking/auto", (req, res) => {
   GetAllKeepBooking(req, res);
