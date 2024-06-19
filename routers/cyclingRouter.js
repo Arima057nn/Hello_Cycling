@@ -7,6 +7,7 @@ const {
   updateAllCycling,
   updateCoordinate,
   getAllCycling,
+  updateQrCode,
 } = require("../controllers/cyclingController");
 const {
   createCyclingType,
@@ -26,5 +27,6 @@ router.post("/update", updateAllCycling);
 router.post("/updateCoordinate", updateCoordinate);
 /// Admin
 router.get("/", authenTokenAdmin, getAllCycling);
+router.post("/updateQrCode", updateQrCode);
 
 module.exports = router;

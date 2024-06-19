@@ -129,6 +129,37 @@ const updateCoordinate = async (req, res, next) => {
     res.status(500).json({ error: "Failed to add coordinate" });
   }
 };
+
+const updateQrCode = async (req, res, next) => {
+  try {
+    const cyclings = req.body; // Dữ liệu đầu vào là một mảng các đối tượng { code, qrcode }
+
+    // Dùng Promise.all để thực hiện các cập nhật đồng thời
+    const updatePromises = cyclings.map(async (cycling) => {
+      const { code, qrcode } = cycling;
+      const cyclingDoc = await CyclingModel.findOne({ code });
+
+      if (!cyclingDoc) {
+        // Nếu không tìm thấy xe với mã code, trả về thông báo lỗi cho xe đó
+        return { code, error: "Không tìm thấy xe này" };
+      }
+
+      cyclingDoc.qrcode = qrcode;
+      await cyclingDoc.save();
+      return cyclingDoc;
+    });
+
+    // Đợi tất cả các promise hoàn thành
+    const results = await Promise.all(updatePromises);
+
+    // Trả về kết quả của tất cả các cập nhật
+    res.json(results);
+  } catch (error) {
+    console.error("Error updating qrcode:", error);
+    res.status(500).json({ error: "Failed to update qrcode" });
+  }
+};
+
 module.exports = {
   getAllCycling,
   createCycling,
@@ -137,4 +168,5 @@ module.exports = {
   sendCoordinate,
   updateAllCycling,
   updateCoordinate,
+  updateQrCode,
 };

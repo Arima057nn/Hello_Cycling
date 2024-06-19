@@ -9,6 +9,7 @@ const CyclingSchema = new mongoose.Schema(
     coordinate: { type: Array },
     password: { type: String },
     status: { type: Number },
+    qrcode: { type: String },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CyclingTypes",

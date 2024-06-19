@@ -27,6 +27,31 @@ const createCyclingAtStation = async (req, res, next) => {
   }
 };
 
+const createCyclingsAtStation = async (req, res, next) => {
+  try {
+    const { stationId, cyclings } = req.body; // Nhận stationId và mảng cyclings từ body
+
+    // Dùng Promise.all để thực hiện các thao tác đồng thời
+    const createPromises = cyclings.map(async (cycling) => {
+      const { cyclingId } = cycling;
+
+      const newCyclingAtStation = await StationCyclingModel.create({
+        stationId: stationId,
+        cyclingId: cyclingId,
+      });
+
+      return newCyclingAtStation;
+    });
+
+    const results = await Promise.all(createPromises);
+
+    res.json(results);
+  } catch (error) {
+    console.error("Error creating cycling at station:", error);
+    res.status(500).json({ error: "Failed to create cycling at station" });
+  }
+};
+
 const GetCountOfAllCyclingAtStation = async (req, res, next) => {
   try {
     const stationList = await StationModel.find();
@@ -115,6 +140,7 @@ const getCyclingsNotAtStation = async (req, res, next) => {
 
 module.exports = {
   createCyclingAtStation,
+  createCyclingsAtStation,
   GetCountOfAllCyclingAtStation,
   getCyclingsAtStation,
   findCyclingAtStation,
