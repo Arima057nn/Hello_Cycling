@@ -14,6 +14,8 @@ const promotionRouter = require("./routers/promotionRouter");
 const transactionRouter = require("./routers/transactionRouter");
 const paymentRouter = require("./routers/paymentRouter");
 const reportRouter = require("./routers/reportRouter");
+const { USER_ROLE } = require("./constants/user");
+const UserModel = require("./models/userModel");
 var cron = require("node-cron");
 
 const serviceAccount = require("./serviceAccountKey.json");
@@ -47,6 +49,36 @@ app.use("/api/promotion", promotionRouter);
 app.use("/api/transaction", transactionRouter);
 app.use("/api/payment", paymentRouter);
 app.use("/api/report", reportRouter);
+
+app.post("/signup", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await admin.auth().createUser({
+      email,
+      password,
+    });
+    const adminFound = await UserModel.findOne({
+      uid: user.uid,
+      role: USER_ROLE.ADMIN,
+    });
+    if (adminFound) {
+      return res.status(422).json({ message: "Admin already exists" });
+    } else {
+      const newAdmin = new UserModel({
+        name: "ADMIN",
+        email: user.email,
+        uid: user.uid,
+        role: USER_ROLE.ADMIN,
+      });
+      await newAdmin.save();
+      console.log("admin", newAdmin);
+      res.status(201).json({ message: "Admin created successfully" }, user);
+    }
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 app.get("/api/booking/auto", (req, res) => {
   GetAllKeepBooking(req, res);
