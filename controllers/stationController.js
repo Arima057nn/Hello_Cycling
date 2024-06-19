@@ -20,7 +20,7 @@ const createStation = async (req, res, next) => {
       position: station.position,
       latitude: station.latitude,
       longitude: station.longitude,
-      image: station.image,
+      imgae: station.image,
     });
 
     res.json(newStation);
