@@ -1,5 +1,6 @@
 const { CYCLING_STATUS } = require("../constants/cycling");
 const CyclingModel = require("../models/cyclingModel");
+const CyclingTypeModel = require("../models/cyclingTypeModel");
 const StationCyclingModel = require("../models/stationCyclingModel");
 
 const getAllCycling = async (req, res, next) => {
@@ -20,7 +21,8 @@ const createCycling = async (req, res, next) => {
     const existingCycling = await CyclingModel.findOne({
       code: cycling.code,
     });
-
+    if (cycling.category === "default")
+      return res.status(400).json({ error: "Bạn chưa chọn loại xe" });
     if (existingCycling) {
       return res.status(400).json({ error: "Cycling already exists" });
     }
@@ -31,6 +33,7 @@ const createCycling = async (req, res, next) => {
       password: cycling.password,
       status: cycling.status,
       category: cycling.category,
+      qrcode: cycling.qrcode,
     });
 
     res.json(newCycling);
