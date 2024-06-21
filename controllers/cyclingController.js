@@ -160,6 +160,63 @@ const updateQrCode = async (req, res, next) => {
   }
 };
 
+const startMaintenance = async (req, res, next) => {
+  try {
+    const { cyclingId } = req.body;
+    const cycling = await CyclingModel.findById(cyclingId);
+    if (!cycling) {
+      return res.status(404).json({ error: "Không tìm thấy xe này" });
+    }
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      if (cycling.status === CYCLING_STATUS.MAINTENANCE) {
+        return res.status(400).json({ error: "Xe đang được bảo dưỡng" });
+      }
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
+    cycling.status = CYCLING_STATUS.MAINTENANCE;
+    await cycling.save();
+    res.json({ message: "Xe đã đưa vào bảo dưỡng" });
+  } catch (error) {
+    console.error("Error finding cycling:", error);
+    res.status(500).json({ error: "Failed to find cycling" });
+  }
+};
+
+const finishMaintenance = async (req, res, next) => {
+  try {
+    const { cyclingId } = req.body;
+    const cycling = await CyclingModel.findById(cyclingId);
+    if (!cycling) {
+      return res.status(404).json({ error: "Không tìm thấy xe này" });
+    }
+    cycling.status = CYCLING_STATUS.READY;
+    await cycling.save();
+    res.json({ message: "Bảo dưỡng hoàn thành" });
+  } catch (error) {
+    console.error("Error finding cycling:", error);
+    res.status(500).json({ error: "Failed to find cycling" });
+  }
+};
+
+const disableCycling = async (req, res, next) => {
+  try {
+    const { cyclingId } = req.body;
+    console.log("cyclingId", cyclingId);
+    const cycling = await CyclingModel.findById(cyclingId);
+    if (!cycling) {
+      return res.status(404).json({ error: "Không tìm thấy xe này" });
+    }
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
+    cycling.status = CYCLING_STATUS.DISABLE;
+    await cycling.save();
+    res.json({ message: "Vô hiệu hóa xe thành công" });
+  } catch (error) {
+    console.error("Error finding cycling:", error);
+    res.status(500).json({ error: "Failed to find cycling" });
+  }
+};
 module.exports = {
   getAllCycling,
   createCycling,
@@ -169,4 +226,7 @@ module.exports = {
   updateAllCycling,
   updateCoordinate,
   updateQrCode,
+  startMaintenance,
+  finishMaintenance,
+  disableCycling,
 };
