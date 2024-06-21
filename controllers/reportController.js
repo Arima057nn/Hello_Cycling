@@ -25,4 +25,31 @@ const createReport = async (req, res) => {
   }
 };
 
-module.exports = { createReport };
+const getALlReport = async (req, res) => {
+  try {
+    const reports = await ReportModel.find()
+      .sort({ createdAt: -1 })
+      .populate("cyclingId")
+      .populate("userId");
+
+    res.json(reports);
+  } catch (error) {
+    console.error("Error getting all reports:", error);
+    res.status(500).json({ error: "Failed to get all reports" });
+  }
+};
+
+const changeStatusReport = async (req, res) => {
+  try {
+    const { reportId, status } = req.body;
+    await ReportModel.findByIdAndUpdate(reportId, {
+      status,
+    });
+    res.json({ message: "Thành công" });
+  } catch (error) {
+    console.error("Error changing status report:", error);
+    res.status(500).json({ error: "Failed to change status report" });
+  }
+};
+
+module.exports = { createReport, getALlReport, changeStatusReport };
