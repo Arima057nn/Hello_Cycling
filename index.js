@@ -14,6 +14,8 @@ const promotionRouter = require("./routers/promotionRouter");
 const transactionRouter = require("./routers/transactionRouter");
 const paymentRouter = require("./routers/paymentRouter");
 const reportRouter = require("./routers/reportRouter");
+const statisticalRouter = require("./routers/statisticalRouter");
+
 const { USER_ROLE } = require("./constants/user");
 const UserModel = require("./models/userModel");
 var cron = require("node-cron");
@@ -49,6 +51,7 @@ app.use("/api/promotion", promotionRouter);
 app.use("/api/transaction", transactionRouter);
 app.use("/api/payment", paymentRouter);
 app.use("/api/report", reportRouter);
+app.use("/api/statistical", statisticalRouter);
 
 app.post("/signup", async (req, res) => {
   try {
