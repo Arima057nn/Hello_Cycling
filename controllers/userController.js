@@ -42,6 +42,23 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const updateFCMToken = async (req, res, next) => {
+  try {
+    const { user_id } = req.user;
+    const { fcmToken } = req.body;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    user.fcm = fcmToken;
+    await user.save();
+    res.status(200).json({ message: "Cập nhật FCM token thành công" });
+  } catch (error) {
+    console.error("Error updating FCM token:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 const getInfoUser = async (req, res, next) => {
   try {
     const { user_id } = req.user;
@@ -72,4 +89,5 @@ module.exports = {
   getInfoUser,
   updateProfile,
   getAllUser,
+  updateFCMToken,
 };

@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema(
     point: { type: Number },
     member: { type: Number },
     balance: { type: Number },
+    fcm: { type: String },
   },
   {
     timestamps: true,
