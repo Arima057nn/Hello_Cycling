@@ -780,11 +780,27 @@ const GetAllKeepBooking = async (req, res) => {
         });
         user.balance = user.balance - ticket[0].price / 2 + keepBooking.payment;
         await user.save();
+        sendNotification(user.fcm);
       }
     }
   } catch (error) {
     console.error("Error get all keep booking:", error);
     res.status(500).json({ error: "Failed to get all keep booking" });
+  }
+};
+
+const sendNotification = async (deviceToken) => {
+  try {
+    await admin.messaging().send({
+      token: deviceToken,
+      notification: {
+        title: "Giữ xe",
+        body: "Thời gian giữ xe trong 1 giờ đã hết",
+      },
+    });
+    console.log("Notification send successfully");
+  } catch (error) {
+    console.log("Notification failed", error);
   }
 };
 
