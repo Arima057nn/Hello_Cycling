@@ -756,9 +756,12 @@ const GetAllKeepBooking = async (req, res) => {
         new Date().getTime()
       ) {
         const user = await UserModel.findById(keepBooking.userId);
-        await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
-          status: CYCLING_STATUS.READY,
-        });
+        const cyclingFind = await CyclingModel.findByIdAndUpdate(
+          keepBooking.cyclingId,
+          {
+            status: CYCLING_STATUS.READY,
+          }
+        );
         await BookingModel.findByIdAndDelete(keepBooking._id);
 
         await UserTicketModel.findOneAndUpdate(
@@ -781,7 +784,7 @@ const GetAllKeepBooking = async (req, res) => {
         });
         user.balance = user.balance - ticket[0].price / 2 + keepBooking.payment;
         await user.save();
-        sendNotification(user.fcm);
+        sendNotification(user.fcm, cyclingFind.name);
       }
     }
   } catch (error) {
@@ -790,13 +793,13 @@ const GetAllKeepBooking = async (req, res) => {
   }
 };
 
-const sendNotification = async (deviceToken) => {
+const sendNotification = async (deviceToken, cycling) => {
   try {
     await admin.messaging().send({
       token: deviceToken,
       notification: {
         title: "Giữ xe",
-        body: "Thời gian giữ xe trong 1 giờ đã hết",
+        body: `Thời gian giữ xe ${cycling} trong 1 giờ đã hết`,
       },
     });
     console.log("Notification send successfully");
