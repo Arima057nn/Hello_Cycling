@@ -16,6 +16,7 @@ const TransactionModel = require("../models/transactionModel");
 const UserModel = require("../models/userModel");
 const UserTicketModel = require("../models/userTicketModel ");
 const { overduePriceToPay } = require("../utils/overduePrice");
+const admin = require("firebase-admin");
 const { Client } = require("@googlemaps/google-maps-services-js");
 const client = new Client({});
 
