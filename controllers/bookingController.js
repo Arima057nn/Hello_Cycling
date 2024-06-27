@@ -16,6 +16,7 @@ const TransactionModel = require("../models/transactionModel");
 const UserModel = require("../models/userModel");
 const UserTicketModel = require("../models/userTicketModel ");
 const { overduePriceToPay } = require("../utils/overduePrice");
+const admin = require("firebase-admin");
 const { Client } = require("@googlemaps/google-maps-services-js");
 const client = new Client({});
 
@@ -755,9 +756,12 @@ const GetAllKeepBooking = async (req, res) => {
         new Date().getTime()
       ) {
         const user = await UserModel.findById(keepBooking.userId);
-        await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
-          status: CYCLING_STATUS.READY,
-        });
+        const cyclingFind = await CyclingModel.findByIdAndUpdate(
+          keepBooking.cyclingId,
+          {
+            status: CYCLING_STATUS.READY,
+          }
+        );
         await BookingModel.findByIdAndDelete(keepBooking._id);
 
         await UserTicketModel.findOneAndUpdate(
@@ -780,11 +784,27 @@ const GetAllKeepBooking = async (req, res) => {
         });
         user.balance = user.balance - ticket[0].price / 2 + keepBooking.payment;
         await user.save();
+        sendNotification(user.fcm, cyclingFind.name);
       }
     }
   } catch (error) {
     console.error("Error get all keep booking:", error);
     res.status(500).json({ error: "Failed to get all keep booking" });
+  }
+};
+
+const sendNotification = async (deviceToken, cycling) => {
+  try {
+    await admin.messaging().send({
+      token: deviceToken,
+      notification: {
+        title: "Giữ xe",
+        body: `Thời gian giữ xe ${cycling} trong 1 giờ đã hết`,
+      },
+    });
+    console.log("Notification send successfully");
+  } catch (error) {
+    console.log("Notification failed", error);
   }
 };
 
