@@ -46,6 +46,7 @@ const updateFCMToken = async (req, res, next) => {
   try {
     const { user_id } = req.user;
     const { fcmToken } = req.body;
+    console.log("fcm token:", fcmToken);
     const user = await UserModel.findOne({ uid: user_id });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
