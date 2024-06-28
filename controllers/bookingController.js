@@ -717,7 +717,7 @@ const changeCycling = async (req, res) => {
       cyclingId: cyclingId,
     });
 
-    res.json({ message: "Change cycling successfully" });
+    res.json({ message: "Đổi xe thành công" });
   } catch (error) {
     console.error("Error change cycling:", error);
     res.status(500).json({ error: "Failed to change cycling" });
