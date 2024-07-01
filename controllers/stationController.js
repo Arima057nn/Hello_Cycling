@@ -30,6 +30,33 @@ const createStation = async (req, res, next) => {
   }
 };
 
+const getStation = async (req, res, next) => {
+  try {
+    const { stationId } = req.query;
+    const station = await StationModel.findById(stationId);
+    res.json(station);
+  } catch (error) {
+    console.error("Error getting station:", error);
+    res.status(500).json({ error: "Failed to get station" });
+  }
+};
+
+const updateStation = async (req, res, next) => {
+  try {
+    const { stationId, name, position, latitude, longitude } = req.body;
+    const station = await StationModel.findByIdAndUpdate(stationId, {
+      name,
+      position,
+      latitude,
+      longitude,
+    });
+    res.json(station);
+  } catch (error) {
+    console.error("Error updating station:", error);
+    res.status(500).json({ error: "Failed to update station" });
+  }
+};
+
 const getAllStation = async (req, res, next) => {
   try {
     const stations = await StationModel.find();
@@ -169,8 +196,10 @@ const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
 };
 
 module.exports = {
+  getStation,
   createStation,
   getAllStation,
+  updateStation,
   calculateDistance,
   calculateDistanceToAllStations,
   getDistanceAndCountOfCyclingAtStations,

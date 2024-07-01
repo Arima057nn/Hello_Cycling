@@ -5,6 +5,8 @@ const {
   calculateDistance,
   calculateDistanceToAllStations,
   getDistanceAndCountOfCyclingAtStations,
+  getStation,
+  updateStation,
 } = require("../controllers/stationController");
 const {
   createCyclingAtStation,
@@ -31,7 +33,9 @@ router.post("/cycling", getDistanceAndCountOfCyclingAtStations);
 router.get("/find", findCyclingAtStation);
 
 // Admmin
-router.get("/cyclingReady", getCyclingsNotAtStation);
+router.get("/id", authenTokenAdmin, getStation);
+router.post("/update", authenTokenAdmin, updateStation);
+router.get("/cyclingReady", authenTokenAdmin,getCyclingsNotAtStation);
 router.post("/deleteCycling", authenTokenAdmin, deleteCyclingAtStation);
 
 module.exports = router;
