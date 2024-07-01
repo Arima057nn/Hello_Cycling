@@ -44,6 +44,10 @@ const createKeepCycling = async (req, res) => {
     //   }
     // } else return res.status(404).json({ error: "User already on the trips" });
 
+    const cycling = await CyclingModel.findById(cyclingId);
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
     const stationCycling = await StationCyclingModel.findOne({
       cyclingId: cyclingId,
       stationId: startStation,
@@ -52,10 +56,7 @@ const createKeepCycling = async (req, res) => {
     if (!stationCycling) {
       return res.status(400).json({ error: "Xe không ở trạm này" });
     }
-    const cycling = await CyclingModel.findById(cyclingId);
-    if (cycling.status !== CYCLING_STATUS.READY) {
-      return res.status(400).json({ error: "Xe đang được sử dụng" });
-    }
+
     const ticket = await TicketModel.findById(ticketId).populate("type");
     if (!ticket) {
       return res.status(404).json({ error: "Không tìm thấy vé" });
@@ -249,6 +250,11 @@ const createBooking = async (req, res) => {
     //   }
     // } else return res.status(404).json({ error: "User already on the trips" });
 
+    const cycling = await CyclingModel.findById(booking.cyclingId);
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
+
     const stationCycling = await StationCyclingModel.findOne({
       cyclingId: booking.cyclingId,
       stationId: booking.startStation,
@@ -258,10 +264,6 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ error: "Xe không ở trạm này" });
     }
 
-    const cycling = await CyclingModel.findById(booking.cyclingId);
-    if (cycling.status !== CYCLING_STATUS.READY) {
-      return res.status(400).json({ error: "Xe đang được sử dụng" });
-    }
     const ticket = await TicketModel.findById(booking.ticketId).populate(
       "type"
     );
