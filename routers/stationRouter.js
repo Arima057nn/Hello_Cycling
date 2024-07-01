@@ -13,6 +13,7 @@ const {
   findCyclingAtStation,
   getCyclingsNotAtStation,
   createCyclingsAtStation,
+  deleteCyclingAtStation,
 } = require("../controllers/stationCyclingController");
 const { authenTokenAdmin } = require("../middleware/auth");
 
@@ -31,5 +32,6 @@ router.get("/find", findCyclingAtStation);
 
 // Admmin
 router.get("/cyclingReady", getCyclingsNotAtStation);
+router.post("/deleteCycling", authenTokenAdmin, deleteCyclingAtStation);
 
 module.exports = router;

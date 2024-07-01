@@ -138,6 +138,36 @@ const getCyclingsNotAtStation = async (req, res, next) => {
   }
 };
 
+const deleteCyclingAtStation = async (req, res, next) => {
+  try {
+    const { cyclingId, stationId } = req.body;
+    console.log("cyclingId", cyclingId, "stationId", stationId);
+    const cycling = await CyclingModel.findById(cyclingId);
+    if (!cycling) {
+      return res.status(400).json({ error: "Không tìm thấy xe" });
+    }
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
+    const station = await StationModel.findById(stationId);
+    if (!station) {
+      return res.status(400).json({ error: "Không tìm thấy trạm" });
+    }
+    const stationCycling = await StationCyclingModel.findOne({
+      cyclingId,
+      stationId,
+    });
+    if (!stationCycling) {
+      return res.status(400).json({ error: "Xe không ở trạm" });
+    }
+    await StationCyclingModel.deleteOne({ cyclingId, stationId });
+    res.json({ message: "Xóa xe khỏi trạm thành công" });
+  } catch (error) {
+    console.error("Error deleting cycling at station:", error);
+    res.status(500).json({ error: "Failed to delete cycling at station" });
+  }
+};
+
 module.exports = {
   createCyclingAtStation,
   createCyclingsAtStation,
@@ -145,4 +175,5 @@ module.exports = {
   getCyclingsAtStation,
   findCyclingAtStation,
   getCyclingsNotAtStation,
+  deleteCyclingAtStation,
 };
