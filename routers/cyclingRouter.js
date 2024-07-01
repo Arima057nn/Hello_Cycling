@@ -11,6 +11,7 @@ const {
   finishMaintenance,
   startMaintenance,
   disableCycling,
+  updateCycling,
 } = require("../controllers/cyclingController");
 const {
   createCyclingType,
@@ -34,4 +35,5 @@ router.post("/updateQrCode", updateQrCode);
 router.post("/maintenance", authenTokenAdmin, startMaintenance);
 router.post("/finish", authenTokenAdmin, finishMaintenance);
 router.post("/disable", authenTokenAdmin, disableCycling);
+router.post("/updateC", authenTokenAdmin, updateCycling);
 module.exports = router;

@@ -63,7 +63,7 @@ const findCycling = async (req, res, next) => {
 const getCycling = async (req, res, next) => {
   try {
     const { code } = req.query;
-    const cycling = await CyclingModel.findOne({ code });
+    const cycling = await CyclingModel.findOne({ code }).populate("category");
     if (!cycling) {
       return res.status(404).json({ error: "Không tìm thấy xe này" });
     }
@@ -220,6 +220,25 @@ const disableCycling = async (req, res, next) => {
     res.status(500).json({ error: "Failed to find cycling" });
   }
 };
+
+const updateCycling = async (req, res, next) => {
+  try {
+    const { code, name } = req.body;
+    const cycling = await CyclingModel.findOne({ code });
+    if (!cycling) {
+      return res.status(404).json({ error: "Không tìm thấy xe này" });
+    }
+    if (cycling.status !== CYCLING_STATUS.READY) {
+      return res.status(400).json({ error: "Xe đang được sử dụng" });
+    }
+    cycling.name = name;
+    await cycling.save();
+    res.json({ message: "Cập nhật thông tin xe thành công" });
+  } catch (error) {
+    console.error("Error finding cycling:", error);
+    res.status(500).json({ error: "Failed to find cycling" });
+  }
+};
 module.exports = {
   getAllCycling,
   createCycling,
@@ -232,4 +251,5 @@ module.exports = {
   startMaintenance,
   finishMaintenance,
   disableCycling,
+  updateCycling,
 };
