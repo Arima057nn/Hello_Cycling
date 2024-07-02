@@ -57,6 +57,23 @@ const updateStation = async (req, res, next) => {
   }
 };
 
+const updateImageStation = async (req, res, next) => {
+  try {
+    const { stationId, image } = req.body;
+    const station = await StationModel.findByIdAndUpdate(
+      stationId,
+      {
+        imgae: image,
+      },
+      { new: true }
+    );
+    res.json(station);
+  } catch (error) {
+    console.error("Error updating station:", error);
+    res.status(500).json({ error: "Failed to update station" });
+  }
+};
+
 const getAllStation = async (req, res, next) => {
   try {
     const stations = await StationModel.find();
@@ -203,4 +220,5 @@ module.exports = {
   calculateDistance,
   calculateDistanceToAllStations,
   getDistanceAndCountOfCyclingAtStations,
+  updateImageStation,
 };
