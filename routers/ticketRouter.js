@@ -8,12 +8,17 @@ const {
   getMyTickets,
   selectTicketToUse,
   cancelTicket,
+  getTicket,
+  updateTicket,
 } = require("../controllers/ticketController");
-const { authenTokenUser } = require("../middleware/auth");
+const { authenTokenUser, authenTokenAdmin } = require("../middleware/auth");
 
 const router = express.Router();
 
-router.post("/create", createTicket);
+router.post("/create", authenTokenAdmin, createTicket);
+router.get("/id", authenTokenAdmin, getTicket);
+router.post("/update", authenTokenAdmin, updateTicket);
+
 router.get("/", getAllTicket);
 router.get("/myTicket", authenTokenUser, getMyTickets);
 router.post("/type", createTicketType);

@@ -42,6 +42,43 @@ const createTicket = async (req, res) => {
   }
 };
 
+const getTicket = async (req, res) => {
+  try {
+    const { id } = req.query;
+    const ticket = await TicketModel.findById(id)
+      .populate("categoryId")
+      .populate("type");
+    if (!ticket) {
+      return res.status(404).json({ error: "Không tìm thấy vé" });
+    }
+    res.json(ticket);
+  } catch (error) {
+    console.error("Error getting ticket:", error);
+    res.status(500).json({ error: "Failed to get ticket" });
+  }
+};
+
+const updateTicket = async (req, res) => {
+  try {
+    const { ticketId, name, price, expiration, timer, overduePrice } = req.body;
+
+    const ticket = await TicketModel.findById(ticketId);
+    if (!ticket) {
+      return res.status(404).json({ error: "Không tìm thấy vé" });
+    }
+    ticket.name = name;
+    ticket.price = price;
+    ticket.expiration = expiration;
+    ticket.timer = timer;
+    ticket.overduePrice = overduePrice;
+    await ticket.save();
+    res.json(ticket);
+  } catch (error) {
+    console.error("Error updating ticket:", error);
+    res.status(500).json({ error: "Failed to update ticket" });
+  }
+};
+
 const getAllTicket = async (req, res) => {
   try {
     const tickets = await TicketModel.find()
@@ -222,4 +259,6 @@ module.exports = {
   getMyTickets,
   selectTicketToUse,
   cancelTicket,
+  getTicket,
+  updateTicket,
 };
