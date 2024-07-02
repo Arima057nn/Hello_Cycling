@@ -239,6 +239,25 @@ const updateCycling = async (req, res, next) => {
     res.status(500).json({ error: "Failed to find cycling" });
   }
 };
+
+const updateQrcodeCycling = async (req, res, next) => {
+  try {
+    const { cyclingId, qrcode } = req.body;
+    const cycling = await CyclingModel.findByIdAndUpdate(
+      cyclingId,
+      {
+        qrcode,
+      },
+      {
+        new: true,
+      }
+    );
+    res.json(cycling);
+  } catch (error) {
+    console.error("Error finding cycling:", error);
+    res.status(500).json({ error: "Failed to find cycling" });
+  }
+};
 module.exports = {
   getAllCycling,
   createCycling,
@@ -252,4 +271,5 @@ module.exports = {
   finishMaintenance,
   disableCycling,
   updateCycling,
+  updateQrcodeCycling,
 };
