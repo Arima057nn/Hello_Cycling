@@ -29,10 +29,10 @@ router.post("/coord", sendCoordinate);
 router.post("/type", createCyclingType);
 router.get("/type", getAllTypes);
 router.post("/update", updateAllCycling);
-router.post("/updateCoordinate", updateCoordinate);
+router.post("/updateCoordinate", authenTokenAdmin, updateCoordinate);
 /// Admin
 router.get("/", authenTokenAdmin, getAllCycling);
-router.post("/updateQrCode", updateQrCode);
+router.post("/updateQrCode", authenTokenAdmin, updateQrCode);
 router.post("/maintenance", authenTokenAdmin, startMaintenance);
 router.post("/finish", authenTokenAdmin, finishMaintenance);
 router.post("/disable", authenTokenAdmin, disableCycling);
