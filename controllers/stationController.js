@@ -138,7 +138,7 @@ const calculateDistanceToAllStations = async (req, res, next) => {
 const getDistanceAndCountOfCyclingAtStations = async (req, res, next) => {
   const { origin } = req.body;
   const stations = await StationModel.find();
-
+  console.log("hehe1");
   try {
     // Lấy thông tin số lượng xe của mỗi trạm
     const stationsWithCyclingCount = await StationCyclingModel.aggregate([
