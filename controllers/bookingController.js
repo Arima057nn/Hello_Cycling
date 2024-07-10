@@ -4,6 +4,7 @@ const {
   REMAINING_MINUTE_TICKET,
   KEEPING_TIME,
 } = require("../constants/booking");
+const admin = require("firebase-admin");
 const { CYCLING_STATUS } = require("../constants/cycling");
 const { TICKET_TYPE, USER_TICKET_STATUS } = require("../constants/ticket");
 const { TRANSACTION_ACTION } = require("../constants/transaction");
@@ -757,9 +758,12 @@ const GetAllKeepBooking = async (req, res) => {
         new Date().getTime()
       ) {
         const user = await UserModel.findById(keepBooking.userId);
-        await CyclingModel.findByIdAndUpdate(keepBooking.cyclingId, {
-          status: CYCLING_STATUS.READY,
-        });
+        const cycling = await CyclingModel.findByIdAndUpdate(
+          keepBooking.cyclingId,
+          {
+            status: CYCLING_STATUS.READY,
+          }
+        );
         await BookingModel.findByIdAndDelete(keepBooking._id);
 
         await UserTicketModel.findOneAndUpdate(
@@ -782,6 +786,24 @@ const GetAllKeepBooking = async (req, res) => {
         });
         user.balance = user.balance - ticket[0].price / 2 + keepBooking.payment;
         await user.save();
+
+        const message = {
+          notification: {
+            title: "Giữ xe",
+            body: `Thời gian giữ xe ${cycling.name} trong 1 giờ đã hết`,
+          },
+          token: user.fcm,
+        };
+        console.log("user", user.fcm);
+        admin
+          .messaging()
+          .send(message)
+          .then((response) => {
+            console.log("Successfully sent message:", response);
+          })
+          .catch((error) => {
+            console.log("Error sending message:", error);
+          });
       }
     }
   } catch (error) {
