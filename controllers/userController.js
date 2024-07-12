@@ -1,4 +1,5 @@
-const { USER_STATUS, USER_ROLE } = require("../constants/user");
+const { USER_STATUS, USER_ROLE, USER_VERIFY } = require("../constants/user");
+const CitizenModel = require("../models/CitizenModel");
 const UserModel = require("../models/userModel");
 
 const register = async (req, res, next) => {
@@ -84,10 +85,43 @@ const getAllUser = async (req, res, next) => {
   }
 };
 
+const sendRequestIndentity = async (req, res, next) => {
+  try {
+    const { identification, fullName, dob, address, issueDate } = req.body;
+    const { user_id } = req.user;
+    const user = await UserModel.findOne({ uid: user_id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (user.verify) {
+      verified = await CitizenModel.findById(user.verify);
+      if (verified) {
+        return res.status(400).json({ error: "Yêu cầu đã được gửi" });
+      }
+    }
+    console.log("User:", identification, fullName, dob, address, issueDate);
+    const verify = await CitizenModel.create({
+      fullName,
+      address,
+      issueDate,
+      dateOfBirth: dob,
+      citizen: identification,
+      verify: USER_VERIFY.VERIFING,
+    });
+    user.verify = verify._id;
+    await user.save();
+    res.status(200).json({ message: "Gửi yêu cầu xác thực thành công" });
+  } catch (error) {
+    console.error("Error sending request identity:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   register,
   getInfoUser,
   updateProfile,
   getAllUser,
   updateFCMToken,
+  sendRequestIndentity,
 };

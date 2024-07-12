@@ -14,4 +14,10 @@ const USER_GENDER = {
   FEMALE: 1,
   OTHER: 2,
 };
-module.exports = { USER_STATUS, USER_ROLE, USER_GENDER };
+
+const USER_VERIFY = {
+  NOT_VERIFIED: 0,
+  VERIFING: 1,
+  VERIFIED: 2,
+};
+module.exports = { USER_STATUS, USER_ROLE, USER_GENDER, USER_VERIFY };

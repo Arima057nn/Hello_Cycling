@@ -15,6 +15,10 @@ const UserSchema = new mongoose.Schema(
     member: { type: Number },
     balance: { type: Number },
     fcm: { type: String },
+    verify: {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: "Citizens",
+    },
   },
   {
     timestamps: true,
