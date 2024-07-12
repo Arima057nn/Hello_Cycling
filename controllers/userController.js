@@ -63,7 +63,7 @@ const updateFCMToken = async (req, res, next) => {
 const getInfoUser = async (req, res, next) => {
   try {
     const { user_id } = req.user;
-    const user = await UserModel.findOne({ uid: user_id });
+    const user = await UserModel.findOne({ uid: user_id }).populate("verify");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -96,7 +96,10 @@ const sendRequestIndentity = async (req, res, next) => {
     if (user.verify) {
       verified = await CitizenModel.findById(user.verify);
       if (verified) {
-        return res.status(400).json({ error: "Yêu cầu đã được gửi" });
+        if (verified.verify === USER_VERIFY.VERIFING)
+          return res.status(400).json({ error: "Tài khoản đang chờ xác thực" });
+        else if (verified.verify === USER_VERIFY.VERIFIED)
+          return res.status(400).json({ error: "Tài khoản đã được xác thực" });
       }
     }
     console.log("User:", identification, fullName, dob, address, issueDate);

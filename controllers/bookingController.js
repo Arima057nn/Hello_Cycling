@@ -18,16 +18,25 @@ const UserModel = require("../models/userModel");
 const UserTicketModel = require("../models/userTicketModel ");
 const { overduePriceToPay } = require("../utils/overduePrice");
 const { Client } = require("@googlemaps/google-maps-services-js");
+const { USER_VERIFY } = require("../constants/user");
 const client = new Client({});
 
 const createKeepCycling = async (req, res) => {
   try {
     const { cyclingId, startStation, ticketId } = req.body;
     const { user_id } = req.user;
-    const user = await UserModel.findOne({ uid: user_id });
+    const user = await UserModel.findOne({ uid: user_id }).populate("verify");
     let paymentCycling = 0;
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+    if (
+      !user.verify ||
+      (user.verify && user.verify.verify !== USER_VERIFY.VERIFIED)
+    ) {
+      return res.status(400).json({
+        error: "Tài khoản chưa được xác thực. Vui lòng xác thực tài khoản !",
+      });
     }
     // let existingBooking = await BookingModel.findOne({
     //   userId: user._id,
@@ -229,9 +238,17 @@ const cancalKeepCycling = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
     const { user_id } = req.user;
-    const user = await UserModel.findOne({ uid: user_id });
+    const user = await UserModel.findOne({ uid: user_id }).populate("verify");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+    if (
+      !user.verify ||
+      (user.verify && user.verify.verify !== USER_VERIFY.VERIFIED)
+    ) {
+      return res.status(400).json({
+        error: "Tài khoản chưa được xác thực. Vui lòng xác thực tài khoản !",
+      });
     }
     const booking = req.body;
     let paymentCycling = 0;
