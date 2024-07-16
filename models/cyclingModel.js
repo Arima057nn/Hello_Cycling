@@ -15,6 +15,7 @@ const CyclingSchema = new mongoose.Schema(
       ref: "CyclingTypes",
       require: true,
     },
+    locked: { type: Number, default: 0 },
   },
   {
     timestamps: true,

@@ -823,6 +823,106 @@ const GetAllKeepBooking = async (req, res) => {
           });
       }
     }
+    //!
+    const activeBookings = await BookingModel.find({
+      status: BOOKING_STATUS.ACTIVE,
+    })
+      .populate({ path: "ticketId", populate: { path: "type" } })
+      .populate("userId");
+    console.log("length2", activeBookings.length);
+
+    for (const activeBooking of activeBookings) {
+      let n = Math.floor(
+        activeBooking.payment / activeBooking.ticketId.overduePrice
+      );
+      let timer = n * activeBooking.ticketId.duration;
+      console.log(
+        "first",
+        n,
+        activeBooking.ticketId.duration,
+        timer,
+        activeBooking.ticketId.type.value
+      );
+      const cycling2 = await CyclingModel.findById(activeBooking.cyclingId);
+      if (activeBooking.ticketId.type.value === TICKET_TYPE.DEFAULT) {
+        console.log("vế lượt");
+        timer = activeBooking.ticketId.timer + timer / 2;
+      } else {
+        console.log("vế ngày");
+        const userTicket = await UserTicketModel.findOne({
+          userId: activeBooking.userId._id,
+          ticketId: activeBooking.ticketId._id,
+          status: USER_TICKET_STATUS.ACTIVE,
+        });
+        console.log(
+          "timer",
+          activeBooking.ticketId.timer,
+          userTicket.usage,
+          timer
+        );
+        timer = activeBooking.ticketId.timer - userTicket.usage + timer;
+      }
+      if (
+        activeBooking.createdAt.getTime() + (timer - 15) * 60 * 1000 <
+          new Date().getTime() &&
+        activeBooking.createdAt.getTime() + timer * 60 * 1000 >
+          new Date().getTime()
+      ) {
+        const user2 = await UserModel.findById(activeBooking.userId);
+        console.log("kiểm tra tài khoản có đủ tiền để gia tăng không");
+        // kiểm tra tài khoản có đủ tiền để gia tăng không
+        if (user2.balance < activeBooking.ticketId.overduePrice) {
+          //!gửi thông báo nạp tiền để gia hạn thời gian sử dụng
+          const message = {
+            notification: {
+              title: "Cảnh báo",
+              body: `Số điểm hiện tại không đủ để sử dụng xe ${cycling2.name} trong 15 phút tới. Vui lòng nạp thêm điểm để tiếp tục sử dụng nếu không xe sẽ bị khóa `,
+            },
+            token: user2.fcm,
+          };
+          console.log("user", user2.fcm);
+          admin
+            .messaging()
+            .send(message)
+            .then((response) => {
+              console.log("Successfully sent message 2:", response);
+            })
+            .catch((error) => {
+              console.log("Error sending message 2:", error);
+            });
+
+          console.log(`Nếu không nạp điểm thì sẽ hủy chuyến đi sau 15 phút`);
+          if (
+            activeBooking.createdAt.getTime() + timer * 60 * 1000 <
+            new Date().getTime()
+          ) {
+            //! tự động kết thúc khóa xe
+            cycling2.locked = 1;
+            await cycling2.save();
+            console.log("chuyen di da bị huy");
+          }
+        } else {
+          console.log(
+            "",
+            activeBooking.payment,
+            activeBooking.ticketId.overduePrice
+          );
+          activeBooking.payment += activeBooking.ticketId.overduePrice;
+          user2.balance -= activeBooking.ticketId.overduePrice;
+          await user2.save();
+          await BookingModel.findByIdAndUpdate(activeBooking._id, {
+            payment: activeBooking.payment,
+          });
+        }
+      } else {
+        console.log(
+          "lỗi",
+          activeBooking.createdAt.getTime() + (timer - 15) * 60 * 1000,
+          new Date().getTime(),
+          activeBooking.createdAt.getTime() + timer * 60 * 1000
+        );
+      }
+    }
   } catch (error) {
     console.error("Error get all keep booking:", error);
     res.status(500).json({ error: "Failed to get all keep booking" });
